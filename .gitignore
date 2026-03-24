@@ -1,0 +1,9 @@
+# Claude Code local settings
+.claude/
+
+# Token usage log
+token-usage.log
+
+# OS
+.DS_Store
+Thumbs.db

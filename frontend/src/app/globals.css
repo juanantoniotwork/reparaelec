@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Markdown styling for chat bot messages */
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3,
+.prose-chat h4 {
+  @apply font-bold mt-3 mb-1.5;
+}
+.prose-chat h1 { @apply text-base; }
+.prose-chat h2 { @apply text-[15px]; }
+.prose-chat h3,
+.prose-chat h4 { @apply text-sm; }
+
+.prose-chat p {
+  @apply mb-2 last:mb-0;
+}
+
+.prose-chat strong {
+  @apply font-bold;
+}
+
+.prose-chat ul {
+  @apply list-disc pl-5 mb-2 space-y-1;
+}
+.prose-chat ol {
+  @apply list-decimal pl-5 mb-2 space-y-1;
+}
+
+.prose-chat li > p {
+  @apply mb-0;
+}
+
+.prose-chat code {
+  @apply bg-gray-200 text-gray-800 px-1 py-0.5 rounded text-xs;
+}
+
+.prose-chat pre {
+  @apply bg-gray-800 text-gray-100 p-3 rounded-lg mb-2 overflow-x-auto;
+}
+.prose-chat pre code {
+  @apply bg-transparent text-gray-100 p-0;
+}
+
+.prose-chat table {
+  @apply w-full text-xs mb-2 border-collapse;
+}
+.prose-chat th {
+  @apply bg-gray-200 font-semibold text-left px-2 py-1 border border-gray-300;
+}
+.prose-chat td {
+  @apply px-2 py-1 border border-gray-300;
+}
+
+.prose-chat hr {
+  @apply border-gray-300 my-3;
+}
+
+.prose-chat a {
+  @apply text-blue-600 underline;
+}

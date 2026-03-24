@@ -1,0 +1,21 @@
+FROM node:20-alpine
+
+WORKDIR /var/www/frontend
+
+# Instalar dependencias necesarias para node-gyp (si fuera necesario)
+RUN apk add --no-cache libc6-compat
+
+# Copiar archivos de definición de paquetes
+COPY ./frontend/package*.json ./
+
+# Instalar dependencias
+RUN npm install
+
+# Copiar el resto de la aplicación
+COPY ./frontend .
+
+# Exponer puerto 3000
+EXPOSE 3000
+
+# Comando para iniciar en modo desarrollo
+CMD ["npm", "run", "dev"]
