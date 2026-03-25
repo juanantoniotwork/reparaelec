@@ -171,8 +171,9 @@ class ChatController extends Controller
 
             // Evento final con fuentes e ID
             echo 'data: ' . json_encode([
-                'sources'        => $data['sources'],
-                'interaction_id' => $interaction->id,
+                'sources'            => $data['sources'],
+                'interaction_id'     => $interaction->id,
+                'detected_category'  => $data['detected_category'] ?? null,
             ]) . "\n\n";
 
             echo "data: [DONE]\n\n";

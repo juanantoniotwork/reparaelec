@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
-import { Send, Bot, User, Sparkles, AlertCircle, Loader2, Tag, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { Send, Bot, User, Sparkles, AlertCircle, Tag, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -176,7 +176,12 @@ export default function ChatPage() {
             if (parsed.chunk !== undefined) {
               setMessages(prev => prev.map(msg => msg.id === botMsgId ? { ...msg, text: msg.text + parsed.chunk } : msg));
             } else if (parsed.sources !== undefined) {
-              setMessages(prev => prev.map(msg => msg.id === botMsgId ? { ...msg, sources: parsed.sources, interactionId: parsed.interaction_id } : msg));
+              setMessages(prev => prev.map(msg => msg.id === botMsgId ? {
+                ...msg,
+                sources: parsed.sources,
+                interactionId: parsed.interaction_id,
+                detectedCategory: parsed.detected_category ?? null,
+              } : msg));
             }
           } catch { /* malformed line */ }
         }
@@ -279,9 +284,19 @@ export default function ChatPage() {
                               ⚡ Sonnet
                             </span>
                           )}
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
-                          {msg.isStreaming && (
-                            <span className="inline-block w-0.5 h-3.5 bg-gray-500 dark:bg-gray-400 ml-0.5 align-middle animate-pulse" />
+                          {msg.isStreaming && !msg.text ? (
+                            <div className="flex items-center gap-1 py-0.5">
+                              <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                              <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                              <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </div>
+                          ) : (
+                            <>
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                              {msg.isStreaming && (
+                                <span className="inline-block w-0.5 h-3.5 bg-gray-500 dark:bg-gray-400 ml-0.5 align-middle animate-pulse" />
+                              )}
+                            </>
                           )}
                         </div>
                       ) : (
@@ -294,6 +309,12 @@ export default function ChatPage() {
                     {msg.sender === 'bot' && msg.interactionId && (
                       <FeedbackButtons interactionId={msg.interactionId} initialFeedback={msg.initialFeedback ?? null} />
                     )}
+                    {msg.sender === 'bot' && msg.detectedCategory && (
+                      <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 px-2 py-0.5 rounded-full">
+                        <Tag className="w-3 h-3" />
+                        Categoría detectada: {msg.detectedCategory}
+                      </span>
+                    )}
                     {msg.sender === 'bot' && msg.sources?.length > 0 && (
                       <SourcesBlock sources={msg.sources} />
                     )}
@@ -301,18 +322,6 @@ export default function ChatPage() {
                 </div>
               </div>
             ))
-          )}
-          {loading && !messages.some(m => m.isStreaming) && (
-            <div className="flex justify-start">
-              <div className="flex max-w-[80%] flex-row">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 mr-3 border border-gray-100 dark:border-gray-600 shadow-sm">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                </div>
-                <div className="p-4 rounded-2xl shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-tl-none border border-gray-100 dark:border-gray-600">
-                  <p className="text-sm italic">Escribiendo...</p>
-                </div>
-              </div>
-            </div>
           )}
           <div ref={messagesEndRef} />
         </div>
