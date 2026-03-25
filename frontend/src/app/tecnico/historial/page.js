@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Calendar, MessageSquare, ChevronRight, History } from 'lucide-react';
+import { Search, Calendar, MessageSquare, ChevronRight, History, Trash2 } from 'lucide-react';
 import api from '@/lib/api';
 
 function groupByDate(interactions) {
@@ -29,6 +29,17 @@ export default function HistorialPage() {
       .catch(() => setError('No se pudo cargar el historial.'))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleDelete = async (e, sessionId) => {
+    e.stopPropagation();
+    if (!confirm('¿Eliminar esta conversación y todos sus mensajes?')) return;
+    try {
+      await api.delete(`/sessions/${sessionId}`);
+      setInteractions(prev => prev.filter(i => i.session_id !== sessionId));
+    } catch {
+      alert('No se pudo eliminar la conversación.');
+    }
+  };
 
   const filtered = interactions.filter(i =>
     i.query.toLowerCase().includes(searchTerm.toLowerCase())
@@ -96,7 +107,14 @@ export default function HistorialPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                      <button
+                        onClick={(e) => handleDelete(e, item.session_id)}
+                        className="p-1.5 rounded-lg text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        title="Eliminar conversación"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                       <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
                     </div>
                   </div>

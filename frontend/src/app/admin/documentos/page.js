@@ -13,6 +13,8 @@ export default function DocumentosPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [modalGeneralError, setModalGeneralError] = useState('');
   const [formData, setFormData] = useState({ title: '', file: null, category_ids: [] });
+  const [viewDoc, setViewDoc] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -89,6 +91,19 @@ export default function DocumentosPage() {
       }
     } finally {
       setUploading(false);
+    }
+  };
+
+  const openViewModal = async (id) => {
+    setViewDoc(null);
+    setViewLoading(true);
+    try {
+      const res = await api.get(`/documents/${id}`);
+      setViewDoc(res.data);
+    } catch {
+      alert('No se pudo cargar el documento.');
+    } finally {
+      setViewLoading(false);
     }
   };
 
@@ -173,7 +188,7 @@ export default function DocumentosPage() {
                       {new Date(doc.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right space-x-3">
-                      <button title="Ver" className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"><Eye className="w-5 h-5" /></button>
+                      <button onClick={() => openViewModal(doc.id)} title="Ver" className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"><Eye className="w-5 h-5" /></button>
                       <button onClick={() => deleteDocument(doc.id)} title="Eliminar" className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400">
                         <Trash2 className="w-5 h-5" />
                       </button>
@@ -192,6 +207,77 @@ export default function DocumentosPage() {
           </div>
         )}
       </div>
+
+      {(viewDoc || viewLoading) && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
+              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 truncate pr-4">
+                {viewDoc ? viewDoc.title : 'Cargando...'}
+              </h3>
+              <button onClick={() => setViewDoc(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {viewLoading && (
+              <div className="flex-1 flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              </div>
+            )}
+
+            {viewDoc && (
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex flex-wrap gap-2">
+                  {viewDoc.categories?.map(cat => (
+                    <span key={cat.id} className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">
+                      {cat.name}
+                    </span>
+                  ))}
+                  {getStatusBadge(viewDoc.status)}
+                </div>
+
+                {viewDoc.summary && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Resumen</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 leading-relaxed">
+                      {viewDoc.summary}
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    Chunks extraídos
+                    <span className="ml-2 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full text-xs font-normal">
+                      {viewDoc.chunks?.length ?? 0}
+                    </span>
+                  </h4>
+                  {viewDoc.chunks?.length === 0 ? (
+                    <p className="text-sm text-gray-400 dark:text-gray-500 italic">Sin chunks procesados aún.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {viewDoc.chunks?.map((chunk, i) => (
+                        <div key={chunk.id} className="border border-gray-100 dark:border-gray-700 rounded-lg p-3 bg-gray-50/50 dark:bg-gray-900/30">
+                          <div className="flex items-center gap-3 mb-1.5 text-xs text-gray-400 dark:text-gray-500">
+                            <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">#{i + 1}</span>
+                            {chunk.page_number && <span>Pág. {chunk.page_number}</span>}
+                            {chunk.section && <span className="truncate max-w-xs">{chunk.section}</span>}
+                            {chunk.token_count && <span className="ml-auto">{chunk.token_count} tokens</span>}
+                          </div>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-3">
+                            {chunk.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">

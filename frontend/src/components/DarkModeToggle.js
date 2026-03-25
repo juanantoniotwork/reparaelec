@@ -25,9 +25,10 @@ export default function DarkModeToggle() {
 
   return (
     <button
+      type="button"
       onClick={toggle}
       title={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-      className="flex items-center justify-center w-9 h-9 rounded-full text-gray-500 hover:text-blue-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-gray-800 transition-colors"
+      className="flex items-center justify-center w-9 h-9 rounded-full text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-white/10 transition-colors"
     >
       {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
     </button>

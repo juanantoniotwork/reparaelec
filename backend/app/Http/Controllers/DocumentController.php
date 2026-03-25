@@ -55,7 +55,10 @@ class DocumentController extends Controller
 
     public function show(Document $document)
     {
-        return response()->json($document->load(['categories', 'chunks']));
+        $document->load(['categories', 'chunks' => function ($q) {
+            $q->select('id', 'document_id', 'content', 'page_number', 'section', 'token_count');
+        }]);
+        return response()->json($document);
     }
 
     public function destroy(Document $document)

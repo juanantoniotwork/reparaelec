@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from '@/lib/auth';
+import DarkModeToggle from '@/components/DarkModeToggle';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -10,6 +11,14 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (localStorage.getItem('theme') === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,17 +32,20 @@ export default function LoginPage() {
         router.push('/tecnico/chat');
       } else {
         setError('Rol de usuario no reconocido.');
+        setLoading(false);
       }
     } catch (err) {
       setError('Credenciales incorrectas o error en el servidor.');
       console.error(err);
-    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
+      <div className="absolute top-4 right-4 z-10">
+        <DarkModeToggle />
+      </div>
       <div className="w-full max-w-md space-y-8 rounded-xl bg-white dark:bg-gray-800 p-8 shadow-md">
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
@@ -84,7 +96,15 @@ export default function LoginPage() {
               disabled={loading}
               className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
             >
-              {loading ? 'Iniciando...' : 'Iniciar sesión'}
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Accediendo...
+                </>
+              ) : 'Iniciar sesión'}
             </button>
           </div>
         </form>

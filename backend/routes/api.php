@@ -10,23 +10,29 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\InteractionController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SessionController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
 
 // Protected routes
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     
-    // Rutas de Técnico
+    // Rutas compartidas técnico + admin
     Route::middleware('role:tecnico,admin')->group(function () {
         Route::get('/categories', [CategoryController::class, 'index']);
-        Route::post('/chat', [ChatController::class, 'query']);
-        Route::post('/chat/stream', [ChatController::class, 'stream']);
-        Route::get('/chat/suggestions', [ChatController::class, 'suggestions']);
         Route::get('/interactions', [InteractionController::class, 'index']);
         Route::post('/interactions/{interaction}/feedback', [InteractionController::class, 'feedback']);
+        Route::delete('/sessions/{id}', [SessionController::class, 'destroy']);
+    });
+
+    // Rutas exclusivas de Técnico
+    Route::middleware('role:tecnico')->group(function () {
+        Route::post('/chat', [ChatController::class, 'query'])->middleware('throttle:20,1');
+        Route::post('/chat/stream', [ChatController::class, 'stream'])->middleware('throttle:20,1');
+        Route::get('/chat/suggestions', [ChatController::class, 'suggestions']);
     });
 
     // Rutas exclusivas de Admin
