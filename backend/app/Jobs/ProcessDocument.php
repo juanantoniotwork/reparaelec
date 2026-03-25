@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Document;
 use App\Models\Chunk;
+use App\Models\Setting;
 use App\Enums\DocumentStatus;
 use App\Services\EmbeddingService;
 use Illuminate\Bus\Queueable;
@@ -41,8 +42,9 @@ class ProcessDocument implements ShouldQueue
                 return;
             }
 
-            // 1. Dividir en chunks (aprox 2000 chars ~ 500 tokens, 10% overlap)
-            $chunks = $this->splitTextIntoChunks($text, 2000, 200);
+            // 1. Dividir en chunks según configuración
+            $chunkSize = Setting::get('chunk_size', 2000);
+            $chunks = $this->splitTextIntoChunks($text, $chunkSize, (int) ($chunkSize * 0.1));
 
             // 2. Generar embeddings y guardar chunks
             foreach ($chunks as $index => $chunkText) {

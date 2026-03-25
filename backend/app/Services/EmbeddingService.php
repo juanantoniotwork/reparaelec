@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 
 class EmbeddingService
@@ -14,7 +15,9 @@ class EmbeddingService
      */
     public function getEmbedding(string $text): array
     {
-        $response = Http::timeout(120)->post("{$this->baseUrl}/api/embeddings", [
+        $timeout = Setting::get('ollama_timeout', 120);
+
+        $response = Http::timeout($timeout)->post("{$this->baseUrl}/api/embeddings", [
             'model' => $this->model,
             'prompt' => $text,
         ]);

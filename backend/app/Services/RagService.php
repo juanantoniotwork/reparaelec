@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Chunk;
 use App\Models\SemanticCache;
+use App\Models\Setting;
 use Anthropic\Laravel\Facades\Anthropic;
 
 class RagService
@@ -26,12 +27,14 @@ class RagService
             return $cached;
         }
 
-        // 3. Buscar los 2 chunks más similares
+        // 3. Buscar los N chunks más similares
+        $ragChunks = Setting::get('rag_chunks', 2);
+
         $chunksQuery = Chunk::query()
             ->select('chunks.*')
             ->join('documents', 'chunks.document_id', '=', 'documents.id')
             ->orderByRaw('embedding <-> ?', [json_encode($questionEmbedding)])
-            ->limit(2);
+            ->limit($ragChunks);
 
         if (!empty($categoryIds)) {
             $chunksQuery->whereHas('document.categories', function ($q) use ($categoryIds) {
@@ -67,9 +70,12 @@ class RagService
         }
 
         // 5. Llamar a Claude
+        $model     = Setting::get('default_model', 'claude-haiku-4-5-20251001');
+        $maxTokens = Setting::get('max_tokens', 1000);
+
         $response = Anthropic::messages()->create([
-            'model' => 'claude-haiku-4-5-20251001',
-            'max_tokens' => 1000,
+            'model' => $model,
+            'max_tokens' => $maxTokens,
             'system' => 'Asistente técnico de reparaciones electrónicas. Responde SOLO con el contexto proporcionado. Cita [Fuente N]. Si no hay info, dilo brevemente.',
             'messages' => [
                 ['role' => 'user', 'content' => "Contexto:\n{$context}\n\nPregunta: {$question}"]
@@ -115,12 +121,14 @@ class RagService
             ];
         }
 
-        // 3. Buscar los 2 chunks más similares
+        // 3. Buscar los N chunks más similares
+        $ragChunks = Setting::get('rag_chunks', 2);
+
         $chunksQuery = Chunk::query()
             ->select('chunks.*')
             ->join('documents', 'chunks.document_id', '=', 'documents.id')
             ->orderByRaw('embedding <-> ?', [json_encode($questionEmbedding)])
-            ->limit(2);
+            ->limit($ragChunks);
 
         if (!empty($categoryIds)) {
             $chunksQuery->whereHas('document.categories', function ($q) use ($categoryIds) {
@@ -170,12 +178,14 @@ class RagService
      */
     protected function findCachedResponse(array $embedding, array $categoryIds): ?array
     {
-        // Distancia coseno: 1 - similitud. Para similitud > 0.92, distancia < 0.08
+        // Distancia coseno: 1 - similitud. Para similitud > threshold, distancia < 1 - threshold
+        $threshold     = Setting::get('cache_threshold', 0.92);
+        $maxDistance   = 1 - $threshold;
         $embeddingJson = json_encode($embedding);
 
         $hit = SemanticCache::query()
             ->selectRaw('*, (embedding <=> ?) as distance', [$embeddingJson])
-            ->whereRaw('(embedding <=> ?) < 0.08', [$embeddingJson])
+            ->whereRaw('(embedding <=> ?) < ?', [$embeddingJson, $maxDistance])
             ->whereRaw('category_ids::text = ?', [json_encode($categoryIds)])
             ->orderByRaw('embedding <=> ?', [$embeddingJson])
             ->first();

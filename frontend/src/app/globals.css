@@ -2,7 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Markdown styling for chat bot messages */
+/* ── Tema claro ─────────────────────────────────────────── */
+:root {
+  --background: #f9fafb;
+  --foreground: #111827;
+  --surface: #ffffff;
+  --surface-secondary: #f3f4f6;
+  --border: #e5e7eb;
+  --text-muted: #6b7280;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+}
+
+/* ── Tema oscuro ─────────────────────────────────────────── */
+.dark {
+  --background: #030712;
+  --foreground: #f3f4f6;
+  --surface: #111827;
+  --surface-secondary: #1f2937;
+  --border: #374151;
+  --text-muted: #9ca3af;
+  --accent: #60a5fa;
+  --accent-hover: #93c5fd;
+}
+
+/* ── Markdown styling for chat bot messages ─────────────── */
+/* En modo oscuro el texto hereda del contenedor del mensaje (dark:text-gray-100) */
+.dark .prose-chat p,
+.dark .prose-chat li,
+.dark .prose-chat ol,
+.dark .prose-chat ul,
+.dark .prose-chat strong,
+.dark .prose-chat h1,
+.dark .prose-chat h2,
+.dark .prose-chat h3,
+.dark .prose-chat h4 {
+  color: inherit;
+}
+
 .prose-chat h1,
 .prose-chat h2,
 .prose-chat h3,
@@ -34,7 +71,7 @@
 }
 
 .prose-chat code {
-  @apply bg-gray-200 text-gray-800 px-1 py-0.5 rounded text-xs;
+  @apply bg-gray-200 text-gray-800 px-1 py-0.5 rounded text-xs dark:bg-gray-700 dark:text-gray-200;
 }
 
 .prose-chat pre {
@@ -48,16 +85,16 @@
   @apply w-full text-xs mb-2 border-collapse;
 }
 .prose-chat th {
-  @apply bg-gray-200 font-semibold text-left px-2 py-1 border border-gray-300;
+  @apply bg-gray-200 font-semibold text-left px-2 py-1 border border-gray-300 dark:bg-gray-700 dark:border-gray-600;
 }
 .prose-chat td {
-  @apply px-2 py-1 border border-gray-300;
+  @apply px-2 py-1 border border-gray-300 dark:border-gray-600;
 }
 
 .prose-chat hr {
-  @apply border-gray-300 my-3;
+  @apply border-gray-300 my-3 dark:border-gray-600;
 }
 
 .prose-chat a {
-  @apply text-blue-600 underline;
+  @apply text-blue-600 underline dark:text-blue-400;
 }

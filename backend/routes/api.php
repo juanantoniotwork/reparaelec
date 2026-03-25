@@ -9,6 +9,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\InteractionController;
 use App\Http\Controllers\StatsController;
+use App\Http\Controllers\SettingsController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -41,6 +42,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // Gestión de Documentos
         Route::apiResource('documents', DocumentController::class)->except(['update']);
+
+        // Configuración del sistema
+        Route::get('/admin/settings', [SettingsController::class, 'index']);
+        Route::put('/admin/settings', [SettingsController::class, 'update']);
     });
 
     // Ejemplo de rutas por rol

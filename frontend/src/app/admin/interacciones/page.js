@@ -7,9 +7,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const FEEDBACK_LABELS = {
-  positive: { label: '👍 Positivo', className: 'bg-green-100 text-green-700' },
-  negative: { label: '👎 Negativo', className: 'bg-red-100 text-red-600' },
-  none:     { label: 'Sin valorar', className: 'bg-gray-100 text-gray-500' },
+  positive: { label: '👍 Positivo', className: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
+  negative: { label: '👎 Negativo', className: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300' },
+  none:     { label: 'Sin valorar', className: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' },
 };
 
 function feedbackBadge(feedback) {
@@ -71,6 +71,9 @@ function exportCSV(data) {
   URL.revokeObjectURL(url);
 }
 
+const selectClass = 'border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500';
+const inputClass = 'border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500';
+
 export default function InteraccionesPage() {
   const [interactions, setInteractions] = useState([]);
   const [users, setUsers] = useState([]);
@@ -78,12 +81,7 @@ export default function InteraccionesPage() {
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
 
-  const [filters, setFilters] = useState({
-    feedback: '',
-    user_id: '',
-    date_from: '',
-    date_to: '',
-  });
+  const [filters, setFilters] = useState({ feedback: '', user_id: '', date_from: '', date_to: '' });
 
   const fetchInteractions = useCallback(async (f) => {
     setLoading(true);
@@ -108,11 +106,7 @@ export default function InteraccionesPage() {
     api.get('/users').then(res => setUsers(res.data)).catch(() => {});
   }, []);
 
-  const handleFilter = (e) => {
-    e.preventDefault();
-    fetchInteractions(filters);
-  };
-
+  const handleFilter = (e) => { e.preventDefault(); fetchInteractions(filters); };
   const handleReset = () => {
     const empty = { feedback: '', user_id: '', date_from: '', date_to: '' };
     setFilters(empty);
@@ -124,8 +118,8 @@ export default function InteraccionesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Interacciones</h2>
-          <p className="text-gray-500 text-sm">Historial de consultas de todos los técnicos</p>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Interacciones</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Historial de consultas de todos los técnicos</p>
         </div>
         <button
           onClick={() => exportCSV(interactions)}
@@ -138,14 +132,13 @@ export default function InteraccionesPage() {
       </div>
 
       {/* Filters */}
-      <form onSubmit={handleFilter} className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-wrap gap-3 items-end shadow-sm">
+      <form
+        onSubmit={handleFilter}
+        className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 flex flex-wrap gap-3 items-end shadow-sm"
+      >
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-500">Feedback</label>
-          <select
-            value={filters.feedback}
-            onChange={e => setFilters(f => ({ ...f, feedback: e.target.value }))}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Feedback</label>
+          <select value={filters.feedback} onChange={e => setFilters(f => ({ ...f, feedback: e.target.value }))} className={selectClass}>
             <option value="">Todos</option>
             <option value="positive">👍 Positivo</option>
             <option value="negative">👎 Negativo</option>
@@ -154,44 +147,28 @@ export default function InteraccionesPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-500">Usuario</label>
-          <select
-            value={filters.user_id}
-            onChange={e => setFilters(f => ({ ...f, user_id: e.target.value }))}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Usuario</label>
+          <select value={filters.user_id} onChange={e => setFilters(f => ({ ...f, user_id: e.target.value }))} className={selectClass}>
             <option value="">Todos</option>
-            {users.map(u => (
-              <option key={u.id} value={u.id}>{u.name}</option>
-            ))}
+            {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-500">Desde</label>
-          <input
-            type="date"
-            value={filters.date_from}
-            onChange={e => setFilters(f => ({ ...f, date_from: e.target.value }))}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Desde</label>
+          <input type="date" value={filters.date_from} onChange={e => setFilters(f => ({ ...f, date_from: e.target.value }))} className={inputClass} />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-500">Hasta</label>
-          <input
-            type="date"
-            value={filters.date_to}
-            onChange={e => setFilters(f => ({ ...f, date_to: e.target.value }))}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Hasta</label>
+          <input type="date" value={filters.date_to} onChange={e => setFilters(f => ({ ...f, date_to: e.target.value }))} className={inputClass} />
         </div>
 
         <div className="flex gap-2 ml-auto">
           <button
             type="button"
             onClick={handleReset}
-            className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             Limpiar
           </button>
@@ -206,18 +183,18 @@ export default function InteraccionesPage() {
       </form>
 
       {/* Table */}
-      {loading && <div className="py-16 text-center text-gray-400">Cargando...</div>}
-      {error   && <div className="py-16 text-center text-red-400">{error}</div>}
+      {loading && <div className="py-16 text-center text-gray-400 dark:text-gray-500">Cargando...</div>}
+      {error   && <div className="py-16 text-center text-red-400 dark:text-red-500">{error}</div>}
 
       {!loading && !error && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
           {interactions.length === 0 ? (
-            <div className="py-16 text-center text-gray-400 text-sm">No hay interacciones con los filtros aplicados.</div>
+            <div className="py-16 text-center text-gray-400 dark:text-gray-500 text-sm">No hay interacciones con los filtros aplicados.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <tr className="bg-gray-50 dark:bg-gray-900 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     <th className="px-4 py-3">ID</th>
                     <th className="px-4 py-3">Usuario</th>
                     <th className="px-4 py-3">Pregunta</th>
@@ -227,25 +204,29 @@ export default function InteraccionesPage() {
                     <th className="px-4 py-3">Caché</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                   {interactions.map((item) => (
                     <tr
                       key={item.id}
                       onClick={() => setSelected(item)}
-                      className="hover:bg-blue-50 cursor-pointer transition-colors"
+                      className="hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                     >
-                      <td className="px-4 py-3 text-gray-400 font-mono text-xs">{item.id}</td>
-                      <td className="px-4 py-3 font-medium text-gray-700 whitespace-nowrap">{item.user?.name ?? '—'}</td>
-                      <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{item.query}</td>
+                      <td className="px-4 py-3 text-gray-400 dark:text-gray-500 font-mono text-xs">{item.id}</td>
+                      <td className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap">{item.user?.name ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300 max-w-xs truncate">{item.query}</td>
                       <td className="px-4 py-3">{feedbackBadge(item.feedback)}</td>
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                         {new Date(item.created_at).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                         {item.response_time_ms != null ? `${item.response_time_ms} ms` : '—'}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${item.from_cache ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                          item.from_cache
+                            ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'
+                            : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                        }`}>
                           {item.from_cache ? 'Sí' : 'No'}
                         </span>
                       </td>
@@ -260,33 +241,31 @@ export default function InteraccionesPage() {
 
       {/* Modal */}
       {selected && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
-            <div className="flex items-start justify-between p-5 border-b border-gray-100">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-start justify-between p-5 border-b border-gray-100 dark:border-gray-700">
               <div className="min-w-0 pr-4 space-y-1">
-                <p className="font-bold text-gray-800 text-sm line-clamp-2">{selected.query}</p>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                  <span className="font-medium text-gray-600">{selected.user?.name ?? '—'}</span>
+                <p className="font-bold text-gray-800 dark:text-gray-100 text-sm line-clamp-2">{selected.query}</p>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                  <span className="font-medium text-gray-600 dark:text-gray-300">{selected.user?.name ?? '—'}</span>
                   <span>•</span>
                   <span>{new Date(selected.created_at).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                   <span>•</span>
                   {feedbackBadge(selected.feedback)}
                   {selected.response_time_ms != null && <><span>•</span><span>{selected.response_time_ms} ms</span></>}
-                  {selected.from_cache && <><span>•</span><span className="text-yellow-600 font-medium">Desde caché</span></>}
+                  {selected.from_cache && <><span>•</span><span className="text-yellow-600 dark:text-yellow-400 font-medium">Desde caché</span></>}
                 </div>
               </div>
               <button
                 onClick={() => setSelected(null)}
-                className="flex-shrink-0 p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                className="flex-shrink-0 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="overflow-y-auto p-5 flex-1">
-              <div className="prose prose-sm max-w-none text-gray-700">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {selected.response}
-                </ReactMarkdown>
+              <div className="prose prose-sm max-w-none text-gray-700 dark:text-gray-300">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{selected.response}</ReactMarkdown>
               </div>
             </div>
           </div>
