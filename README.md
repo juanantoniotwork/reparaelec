@@ -111,7 +111,7 @@ docker exec reparaelec_php php artisan db:seed
 | Rol | Email | Contraseña |
 |-----|-------|-----------|
 | Admin | admin@reparaelec.com | password123 |
-| Técnico | tecnico1@reparaelec.com | password123 |
+| Técnico | tecnico1@reparaelec.com | 123456789 |
 
 ---
 
