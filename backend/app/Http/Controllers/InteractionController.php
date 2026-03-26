@@ -54,6 +54,16 @@ class InteractionController extends Controller
         return response()->json($interactions);
     }
 
+    public function adminShow(Interaction $interaction)
+    {
+        $interaction->load('user:id,name,email');
+
+        return response()->json($interaction->only([
+            'id', 'user_id', 'query', 'response', 'feedback',
+            'created_at', 'response_time_ms', 'from_cache', 'model',
+        ]) + ['user' => $interaction->user]);
+    }
+
     public function feedback(Request $request, Interaction $interaction)
     {
         $request->validate([

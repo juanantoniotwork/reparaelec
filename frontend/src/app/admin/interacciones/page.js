@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Download, Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Download, Search } from 'lucide-react';
 import api from '@/lib/api';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 const FEEDBACK_LABELS = {
   positive: { label: '👍 Positivo', className: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
@@ -75,11 +74,11 @@ const selectClass = 'border border-gray-200 dark:border-gray-600 rounded-lg px-3
 const inputClass = 'border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 export default function InteraccionesPage() {
+  const router = useRouter();
   const [interactions, setInteractions] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selected, setSelected] = useState(null);
 
   const [filters, setFilters] = useState({ feedback: '', user_id: '', date_from: '', date_to: '' });
 
@@ -208,7 +207,7 @@ export default function InteraccionesPage() {
                   {interactions.map((item) => (
                     <tr
                       key={item.id}
-                      onClick={() => setSelected(item)}
+                      onClick={() => router.push(`/admin/interacciones/${item.id}`)}
                       className="hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                     >
                       <td className="px-4 py-3 text-gray-400 dark:text-gray-500 font-mono text-xs">{item.id}</td>
@@ -239,38 +238,6 @@ export default function InteraccionesPage() {
         </div>
       )}
 
-      {/* Modal */}
-      {selected && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
-            <div className="flex items-start justify-between p-5 border-b border-gray-100 dark:border-gray-700">
-              <div className="min-w-0 pr-4 space-y-1">
-                <p className="font-bold text-gray-800 dark:text-gray-100 text-sm line-clamp-2">{selected.query}</p>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
-                  <span className="font-medium text-gray-600 dark:text-gray-300">{selected.user?.name ?? '—'}</span>
-                  <span>•</span>
-                  <span>{new Date(selected.created_at).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })}</span>
-                  <span>•</span>
-                  {feedbackBadge(selected.feedback)}
-                  {selected.response_time_ms != null && <><span>•</span><span>{selected.response_time_ms} ms</span></>}
-                  {selected.from_cache && <><span>•</span><span className="text-yellow-600 dark:text-yellow-400 font-medium">Desde caché</span></>}
-                </div>
-              </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="flex-shrink-0 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="overflow-y-auto p-5 flex-1">
-              <div className="prose prose-sm max-w-none text-gray-700 dark:text-gray-300">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{selected.response}</ReactMarkdown>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

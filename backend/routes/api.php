@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\BrandController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\InteractionController;
@@ -23,6 +24,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     // Rutas compartidas técnico + admin
     Route::middleware('role:tecnico,admin')->group(function () {
         Route::get('/categories', [CategoryController::class, 'index']);
+        Route::get('/brands', [BrandController::class, 'index']);
         Route::get('/interactions', [InteractionController::class, 'index']);
         Route::post('/interactions/{interaction}/feedback', [InteractionController::class, 'feedback']);
         Route::delete('/sessions/{id}', [SessionController::class, 'destroy']);
@@ -39,6 +41,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/stats', [StatsController::class, 'index']);
         Route::get('/admin/interactions', [InteractionController::class, 'adminIndex']);
+        Route::get('/admin/interactions/{interaction}', [InteractionController::class, 'adminShow']);
         // CRUD de Usuarios
         Route::apiResource('users', UserController::class);
         Route::patch('users/{user}/toggle', [UserController::class, 'toggle']);
@@ -46,8 +49,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         // CRUD de Categorías (index accesible también por técnico, ver grupo anterior)
         Route::apiResource('categories', CategoryController::class)->except(['index']);
 
+        // CRUD de Marcas (index accesible también por técnico, ver grupo anterior)
+        Route::apiResource('brands', BrandController::class)->except(['index']);
+
         // Gestión de Documentos
-        Route::apiResource('documents', DocumentController::class)->except(['update']);
+        Route::apiResource('documents', DocumentController::class);
 
         // Configuración del sistema
         Route::get('/admin/settings', [SettingsController::class, 'index']);

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import useAuth from '@/hooks/useAuth';
 import DarkModeToggle from '@/components/DarkModeToggle';
-import { LayoutDashboard, Users, Tags, FileText, MessageSquare, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Tags, Bookmark, FileText, MessageSquare, Settings, LogOut } from 'lucide-react';
 
 export default function AdminLayout({ children }) {
   const { logout } = useAuth();
@@ -31,6 +31,10 @@ export default function AdminLayout({ children }) {
           <Link href="/admin/categorias" className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400">
             <Tags className="w-5 h-5 mr-3" />
             Categorías
+          </Link>
+          <Link href="/admin/marcas" className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400">
+            <Bookmark className="w-5 h-5 mr-3" />
+            Marcas
           </Link>
           <Link href="/admin/documentos" className="flex items-center px-6 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400">
             <FileText className="w-5 h-5 mr-3" />

@@ -19,6 +19,7 @@ class Document extends Model
         'status',
         'summary',
         'uploaded_by',
+        'brand_id',
     ];
 
     protected $casts = [
@@ -38,5 +39,10 @@ class Document extends Model
     public function chunks(): HasMany
     {
         return $this->hasMany(Chunk::class);
+    }
+
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class);
     }
 }

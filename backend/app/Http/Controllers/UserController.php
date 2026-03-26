@@ -15,6 +15,11 @@ class UserController extends Controller
         return response()->json(User::all());
     }
 
+    public function show(User $user)
+    {
+        return response()->json($user);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -38,11 +43,12 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'email' => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
-            'password' => 'sometimes|string|min:8',
-            'role' => ['sometimes', Rule::enum(Role::class)],
+            'name'     => 'sometimes|string|max:255',
+            'email'    => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
+            'password' => 'sometimes|string|min:8|confirmed',
+            'role'     => ['sometimes', Rule::enum(Role::class)],
             'is_active' => 'sometimes|boolean',
+            'language' => 'sometimes|string|max:10',
         ]);
 
         if (isset($validated['password'])) {
