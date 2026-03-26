@@ -12,6 +12,15 @@ import { z } from 'zod'
 const requiredString = (msg = 'Campo obligatorio') =>
   z.string().min(1, msg).max(255, 'Máximo 255 caracteres')
 
+// ── Login ─────────────────────────────────────────────────────────────────────
+
+export const loginFormSchema = z.object({
+  email:    z.string().min(1, 'El email es obligatorio').email('Email no válido'),
+  password: z.string().min(1, 'La contraseña es obligatoria'),
+})
+
+export type LoginForm = z.infer<typeof loginFormSchema>
+
 // ── Categorías ────────────────────────────────────────────────────────────────
 
 export const categoryFormSchema = z.object({

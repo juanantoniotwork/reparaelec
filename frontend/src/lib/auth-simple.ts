@@ -55,6 +55,44 @@ export function getCurrentRole(): UserRole | null {
   return null
 }
 
+// ── Escritura ────────────────────────────────────────────────────────────────
+
+const COOKIE_DAYS = 7
+
+function setCookie(name: string, value: string): void {
+  const maxAge = COOKIE_DAYS * 24 * 60 * 60
+  document.cookie = `${name}=${encodeURIComponent(value)};path=/;max-age=${maxAge};SameSite=Lax`
+}
+
+function removeCookie(name: string): void {
+  document.cookie = `${name}=;path=/;max-age=0`
+}
+
+/**
+ * Persiste el token, el rol y el usuario tras un login exitoso.
+ * Guarda en localStorage y en cookies (para el middleware de Next.js).
+ */
+export function saveAuthSession(token: string, role: UserRole, user: AuthUser): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('access_token', token)
+  localStorage.setItem('role', role)
+  localStorage.setItem('user', JSON.stringify(user))
+  setCookie('access_token', token)
+  setCookie('role', role)
+}
+
+/**
+ * Elimina todos los datos de sesión del localStorage y las cookies.
+ */
+export function clearAuthSession(): void {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('role')
+  localStorage.removeItem('user')
+  removeCookie('access_token')
+  removeCookie('role')
+}
+
 // ── Guards ───────────────────────────────────────────────────────────────────
 
 /** True si hay sesión activa. */
