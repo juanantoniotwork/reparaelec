@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react'
 
@@ -30,10 +30,11 @@ export default function LoginPage() {
   }, [])
 
   const {
-    register, handleSubmit,
+    control, handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({
-    resolver: zodResolver(loginFormSchema),
+    resolver:      zodResolver(loginFormSchema),
+    defaultValues: { email: '', password: '' },
   })
 
   const onSubmit = async (data: LoginForm) => {
@@ -97,15 +98,21 @@ export default function LoginPage() {
             >
               Correo electrónico
             </Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              autoFocus
-              placeholder="correo@ejemplo.com"
-              aria-invalid={!!errors.email}
-              {...register('email')}
-              className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 h-10"
+            <Controller
+              name="email"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  autoFocus
+                  placeholder="correo@ejemplo.com"
+                  aria-invalid={!!errors.email}
+                  className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 h-10"
+                />
+              )}
             />
             {errors.email && (
               <p className="text-xs font-medium text-red-500">{errors.email.message}</p>
@@ -121,14 +128,20 @@ export default function LoginPage() {
               Contraseña
             </Label>
             <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                placeholder="••••••••"
-                aria-invalid={!!errors.password}
-                {...register('password')}
-                className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 h-10 pr-10"
+              <Controller
+                name="password"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    aria-invalid={!!errors.password}
+                    className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 h-10 pr-10"
+                  />
+                )}
               />
               <button
                 type="button"
