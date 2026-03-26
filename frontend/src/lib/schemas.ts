@@ -57,3 +57,13 @@ export const editUserFormSchema = z.object({
 )
 
 export type EditUserForm = z.infer<typeof editUserFormSchema>
+
+// ── Documentos ──────────────────────────────────────────────────────────────────
+
+export const documentFormSchema = z.object({
+  title:      requiredString('El título es obligatorio'),
+  categoryId: requiredString('La categoría es obligatoria'),
+  brandId:    z.string(),
+})
+
+export type DocumentForm = z.infer<typeof documentFormSchema>
