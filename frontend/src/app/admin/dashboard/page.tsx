@@ -1,71 +1,93 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import api from '@/lib/api';
-import { FileText, Users, MessageSquare, Database, ThumbsUp, ThumbsDown, Zap, Layers, Euro } from 'lucide-react';
+import { useState, useEffect } from 'react'
+import {
+  FileText, Users, MessageSquare,
+  ThumbsUp, ThumbsDown, Zap, Euro, Loader2,
+} from 'lucide-react'
 
-export default function DashboardPage() {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+import { getStats, type DashboardStats } from '@/lib/api/dashboard'
 
-  useEffect(() => {
-    api.get('/admin/stats')
-      .then(res => setStats(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+// ── KPI card ──────────────────────────────────────────────────────────────────
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64 text-gray-400 dark:text-gray-500">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3" />
-        Cargando estadísticas...
-      </div>
-    );
-  }
+interface KpiItem {
+  title: string
+  value: string
+  icon:  React.ElementType
+  color: string
+  sub:   string
+}
 
-  if (!stats) return null;
-
-  const kpis = [
+function buildKpis(stats: DashboardStats): KpiItem[] {
+  return [
     {
       title: 'Total consultas',
       value: stats.totals.interactions.toLocaleString(),
-      icon: MessageSquare,
+      icon:  MessageSquare,
       color: 'bg-blue-500',
-      sub: `${stats.totals.users} usuarios activos`,
+      sub:   `${stats.totals.users} usuarios activos`,
     },
     {
       title: 'Satisfacción',
-      value: stats.feedback.positive_pct !== null ? `${stats.feedback.positive_pct}%` : 'Sin datos',
-      icon: ThumbsUp,
+      value: stats.feedback.positive_pct !== null
+        ? `${stats.feedback.positive_pct}%`
+        : 'Sin datos',
+      icon:  ThumbsUp,
       color: 'bg-green-500',
-      sub: `${stats.feedback.positive} positivos · ${stats.feedback.negative} negativos`,
+      sub:   `${stats.feedback.positive} positivos · ${stats.feedback.negative} negativos`,
     },
     {
       title: 'Hit rate caché',
       value: `${stats.cache.hit_rate}%`,
-      icon: Zap,
+      icon:  Zap,
       color: 'bg-purple-500',
-      sub: `${stats.cache.hits} hits · ${stats.cache.entries} entradas`,
+      sub:   `${stats.cache.hits} hits · ${stats.cache.entries} entradas`,
     },
     {
       title: 'Base de conocimiento',
       value: stats.totals.documents.toLocaleString(),
-      icon: FileText,
+      icon:  FileText,
       color: 'bg-orange-500',
-      sub: `${stats.totals.chunks} chunks indexados`,
+      sub:   `${stats.totals.chunks} chunks indexados`,
     },
     {
       title: 'Coste estimado IA',
-      value: stats.tokens.estimated_cost_eur > 0 ? `${stats.tokens.estimated_cost_eur.toFixed(4)} €` : '—',
-      icon: Euro,
+      value: stats.tokens.estimated_cost_eur > 0
+        ? `${stats.tokens.estimated_cost_eur.toFixed(4)} €`
+        : '—',
+      icon:  Euro,
       color: 'bg-rose-500',
-      sub: `${(stats.tokens.input + stats.tokens.output).toLocaleString()} tokens totales`,
+      sub:   `${(stats.tokens.input + stats.tokens.output).toLocaleString()} tokens totales`,
     },
-  ];
+  ]
+}
 
-  const dayEntries = Object.entries(stats.interactions_by_day);
-  const maxVal = Math.max(...dayEntries.map(([, v]) => v), 1);
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+export default function DashboardPage() {
+  const [stats, setStats]     = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getStats()
+      .then(result => { if (result.success) setStats(result.data!) })
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-400 dark:text-gray-500">
+        <Loader2 className="animate-spin h-8 w-8 border-0 mr-3 text-blue-600" />
+        Cargando estadísticas...
+      </div>
+    )
+  }
+
+  if (!stats) return null
+
+  const kpis       = buildKpis(stats)
+  const dayEntries = Object.entries(stats.interactions_by_day)
+  const maxVal     = Math.max(...dayEntries.map(([, v]) => v), 1)
 
   return (
     <div className="space-y-8">
@@ -77,7 +99,7 @@ export default function DashboardPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {kpis.map((kpi) => {
-          const Icon = kpi.icon;
+          const Icon = kpi.icon
           return (
             <div key={kpi.title} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
@@ -91,7 +113,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-          );
+          )
         })}
       </div>
 
@@ -101,8 +123,11 @@ export default function DashboardPage() {
           <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-4">Consultas últimos 7 días</h3>
           <div className="flex items-end gap-2 h-36">
             {dayEntries.map(([day, count]) => {
-              const heightPct = maxVal > 0 ? Math.round((count / maxVal) * 100) : 0;
-              const label = new Date(day + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
+              const heightPct = maxVal > 0 ? Math.round((count / maxVal) * 100) : 0
+              const label = new Date(day + 'T12:00:00').toLocaleDateString('es-ES', {
+                weekday: 'short',
+                day:     'numeric',
+              })
               return (
                 <div key={day} className="flex-1 flex flex-col items-center gap-1">
                   <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{count || ''}</span>
@@ -114,7 +139,7 @@ export default function DashboardPage() {
                   </div>
                   <span className="text-[10px] text-gray-400 dark:text-gray-500 text-center leading-tight">{label}</span>
                 </div>
-              );
+              )
             })}
           </div>
         </div>
@@ -152,8 +177,14 @@ export default function DashboardPage() {
                 <div className="bg-red-400 flex-1 transition-all" />
               </div>
               <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3 text-green-500" /> {stats.feedback.positive} positivos ({stats.feedback.positive_pct}%)</span>
-                <span className="flex items-center gap-1"><ThumbsDown className="w-3 h-3 text-red-500" /> {stats.feedback.negative} negativos</span>
+                <span className="flex items-center gap-1">
+                  <ThumbsUp className="w-3 h-3 text-green-500" />
+                  {stats.feedback.positive} positivos ({stats.feedback.positive_pct}%)
+                </span>
+                <span className="flex items-center gap-1">
+                  <ThumbsDown className="w-3 h-3 text-red-500" />
+                  {stats.feedback.negative} negativos
+                </span>
               </div>
             </>
           ) : (
@@ -186,5 +217,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
