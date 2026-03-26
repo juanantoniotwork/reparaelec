@@ -1,31 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser, type AuthUser } from '@/lib/auth-simple'
-import { logoutUser } from '@/lib/api/auth'
+import { useAuthStore } from '@/lib/stores/useAuthStore'
+import type { AuthUser } from '@/lib/auth-simple'
 
 interface UseAuthReturn {
   user:    AuthUser | null
-  loading: boolean
+  loading: false
   logout:  () => Promise<void>
 }
 
 export default function useAuth(): UseAuthReturn {
-  const [user, setUser]       = useState<AuthUser | null>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
-
-  useEffect(() => {
-    setUser(getCurrentUser())
-    setLoading(false)
-  }, [])
+  const router  = useRouter()
+  const user    = useAuthStore(s => s.user)
+  const logout  = useAuthStore(s => s.logout)
 
   const handleLogout = async () => {
-    await logoutUser()
-    setUser(null)
+    await logout()
     router.push('/')
   }
 
-  return { user, loading, logout: handleLogout }
+  return { user, loading: false, logout: handleLogout }
 }

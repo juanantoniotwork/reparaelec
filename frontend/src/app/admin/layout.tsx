@@ -1,12 +1,22 @@
-'use client';
+'use client'
 
-import Link from 'next/link';
-import useAuth from '@/hooks/useAuth';
-import DarkModeToggle from '@/components/DarkModeToggle';
-import { LayoutDashboard, Users, Tags, Bookmark, FileText, MessageSquare, Settings, LogOut } from 'lucide-react';
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useAuthStore } from '@/lib/stores/useAuthStore'
+import DarkModeToggle from '@/components/DarkModeToggle'
+import {
+  LayoutDashboard, Users, Tags, Bookmark,
+  FileText, MessageSquare, Settings, LogOut,
+} from 'lucide-react'
 
-export default function AdminLayout({ children }) {
-  const { logout } = useAuth();
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+  const logout = useAuthStore(s => s.logout)
+
+  const handleLogout = async () => {
+    await logout()
+    router.push('/')
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-950">
@@ -51,7 +61,7 @@ export default function AdminLayout({ children }) {
         </nav>
         <div className="p-6">
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="flex items-center w-full px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 rounded-md"
           >
             <LogOut className="w-5 h-5 mr-3" />
@@ -65,5 +75,5 @@ export default function AdminLayout({ children }) {
         {children}
       </main>
     </div>
-  );
+  )
 }

@@ -33,7 +33,7 @@ interface ApiLoginResponse {
 export async function loginUser(
   email: string,
   password: string,
-): Promise<ApiResult<{ role: UserRole }>> {
+): Promise<ApiResult<{ role: UserRole; token: string; user: AuthUser }>> {
   try {
     const res = await fetchWithAuth('/api/login', {
       method:            'POST',
@@ -66,7 +66,7 @@ export async function loginUser(
 
     saveAuthSession(access_token, role, authUser)
 
-    return { success: true, data: { role } }
+    return { success: true, data: { role, token: access_token, user: authUser } }
   } catch {
     return { success: false, error: 'No se pudo conectar con el servidor.' }
   }

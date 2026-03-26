@@ -8,6 +8,7 @@ import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react'
 
 import { loginUser } from '@/lib/api/auth'
 import { loginFormSchema, type LoginForm } from '@/lib/schemas'
+import { useAuthStore } from '@/lib/stores/useAuthStore'
 
 import { Button } from '@/components/ui/button'
 import { Input }  from '@/components/ui/input'
@@ -45,7 +46,8 @@ export default function LoginPage() {
       return
     }
 
-    const { role } = result.data!
+    const { role, token, user } = result.data!
+    useAuthStore.getState().setSession(token, role, user)
     if (role === 'admin') {
       router.push('/admin/dashboard')
     } else if (role === 'tecnico') {

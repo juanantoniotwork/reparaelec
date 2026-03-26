@@ -10,6 +10,7 @@ import {
 
 import { getSettings, updateSettings, type Setting } from '@/lib/api/settings'
 import { settingsFormSchema, type SettingsForm } from '@/lib/schemas'
+import { useSettingsStore } from '@/lib/stores/useSettingsStore'
 
 import { Button } from '@/components/ui/button'
 import { Input }  from '@/components/ui/input'
@@ -228,6 +229,10 @@ function SettingGroup({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ConfiguracionPage() {
+  const storeSettings  = useSettingsStore(s => s.settings)
+  const setStoreSettings = useSettingsStore(s => s.setSettings)
+  const isStale        = useSettingsStore(s => s.isStale)
+
   const [settings, setSettings] = useState<Setting[]>([])
   const [loading, setLoading]   = useState(true)
   const [fetchError, setFetchError] = useState('')
@@ -248,6 +253,7 @@ export default function ConfiguracionPage() {
     const result = await getSettings()
     if (result.success) {
       setSettings(result.data!)
+      setStoreSettings(result.data!)
       const defaults: Record<string, string> = {}
       result.data!.forEach(s => { defaults[s.key] = s.value })
       reset(defaults)
@@ -255,9 +261,20 @@ export default function ConfiguracionPage() {
       setFetchError(result.error || 'Error al cargar la configuración.')
     }
     setLoading(false)
-  }, [reset])
+  }, [reset, setStoreSettings])
 
-  useEffect(() => { loadSettings() }, [loadSettings])
+  useEffect(() => {
+    // Usar caché si está fresco; recargar si está stale
+    if (!isStale() && storeSettings.length > 0) {
+      setSettings(storeSettings)
+      const defaults: Record<string, string> = {}
+      storeSettings.forEach(s => { defaults[s.key] = s.value })
+      reset(defaults)
+      setLoading(false)
+    } else {
+      loadSettings()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const onSubmit = async (data: SettingsForm) => {
@@ -269,6 +286,7 @@ export default function ConfiguracionPage() {
 
     if (result.success) {
       setSettings(result.data!)
+      setStoreSettings(result.data!)
       const updated: Record<string, string> = {}
       result.data!.forEach(s => { updated[s.key] = s.value })
       reset(updated)
