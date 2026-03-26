@@ -28,3 +28,32 @@ export const brandFormSchema = z.object({
 })
 
 export type BrandForm = z.infer<typeof brandFormSchema>
+
+// ── Usuarios ───────────────────────────────────────────────────────────────────
+
+export const createUserFormSchema = z.object({
+  name:     requiredString('El nombre es obligatorio'),
+  email:    z.string().min(1, 'El email es obligatorio').email('Email inválido'),
+  password: z.string().min(8, 'Mínimo 8 caracteres'),
+  role:     z.enum(['admin', 'tecnico'], { error: 'Selecciona un rol' }),
+})
+
+export type CreateUserForm = z.infer<typeof createUserFormSchema>
+
+export const editUserFormSchema = z.object({
+  name:            requiredString('El nombre es obligatorio'),
+  email:           z.string().min(1, 'El email es obligatorio').email('Email inválido'),
+  role:            z.enum(['admin', 'tecnico']),
+  language:        z.string(),
+  isActive:        z.boolean(),
+  newPassword:     z.string(),
+  confirmPassword: z.string(),
+}).refine(
+  (d) => !d.newPassword || d.newPassword.length >= 8,
+  { message: 'Mínimo 8 caracteres', path: ['newPassword'] },
+).refine(
+  (d) => !d.newPassword || d.newPassword === d.confirmPassword,
+  { message: 'Las contraseñas no coinciden', path: ['confirmPassword'] },
+)
+
+export type EditUserForm = z.infer<typeof editUserFormSchema>
