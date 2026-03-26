@@ -67,3 +67,14 @@ export const documentFormSchema = z.object({
 })
 
 export type DocumentForm = z.infer<typeof documentFormSchema>
+
+// ── Interacciones (filtros) ────────────────────────────────────────────────────
+
+export const interactionFilterSchema = z.object({
+  feedback: z.string(),
+  userId:   z.string(),
+  dateFrom: z.string(),
+  dateTo:   z.string(),
+})
+
+export type InteractionFilterForm = z.infer<typeof interactionFilterSchema>
