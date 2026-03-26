@@ -68,6 +68,49 @@ export const documentFormSchema = z.object({
 
 export type DocumentForm = z.infer<typeof documentFormSchema>
 
+// ── Configuración (settings) ──────────────────────────────────────────────────
+
+/**
+ * Valida los valores de los settings conocidos.
+ * Usa z.record para permitir claves desconocidas (settings futuros del backend).
+ */
+export const settingsFormSchema = z.record(z.string(), z.string()).superRefine((data, ctx) => {
+  const addErr = (key: string, msg: string) =>
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: [key] })
+
+  if ('rag_chunks' in data) {
+    const v = Number(data.rag_chunks)
+    if (!Number.isInteger(v) || v < 1 || v > 20)
+      addErr('rag_chunks', 'Entero entre 1 y 20')
+  }
+  if ('cache_threshold' in data) {
+    const v = Number(data.cache_threshold)
+    if (isNaN(v) || v < 0 || v > 1)
+      addErr('cache_threshold', 'Decimal entre 0.00 y 1.00')
+  }
+  if ('chunk_size' in data) {
+    const v = Number(data.chunk_size)
+    if (!Number.isInteger(v) || v < 100 || v > 8000)
+      addErr('chunk_size', 'Entero entre 100 y 8000')
+  }
+  if ('max_tokens' in data) {
+    const v = Number(data.max_tokens)
+    if (!Number.isInteger(v) || v < 100 || v > 8192)
+      addErr('max_tokens', 'Entero entre 100 y 8192')
+  }
+  if ('ollama_timeout' in data) {
+    const v = Number(data.ollama_timeout)
+    if (!Number.isInteger(v) || v < 10 || v > 600)
+      addErr('ollama_timeout', 'Entero entre 10 y 600')
+  }
+  if ('default_model' in data) {
+    if (!data.default_model?.trim())
+      addErr('default_model', 'El modelo no puede estar vacío')
+  }
+})
+
+export type SettingsForm = z.infer<typeof settingsFormSchema>
+
 // ── Interacciones (filtros) ────────────────────────────────────────────────────
 
 export const interactionFilterSchema = z.object({
