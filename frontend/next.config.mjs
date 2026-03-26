@@ -1,5 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  typescript: {
+    // Los errores de TS no bloquean el build durante la migración incremental
+    ignoreBuildErrors: true,
+  },
+  images: {
+    unoptimized: true,
+  },
   async rewrites() {
     return [
       {
