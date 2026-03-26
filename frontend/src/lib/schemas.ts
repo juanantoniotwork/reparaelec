@@ -19,3 +19,12 @@ export const categoryFormSchema = z.object({
 })
 
 export type CategoryForm = z.infer<typeof categoryFormSchema>
+
+// ── Marcas ─────────────────────────────────────────────────────────────────────
+
+export const brandFormSchema = z.object({
+  name:       requiredString('El nombre es obligatorio'),
+  categoryId: requiredString('La categoría es obligatoria'),
+})
+
+export type BrandForm = z.infer<typeof brandFormSchema>
