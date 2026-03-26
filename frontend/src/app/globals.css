@@ -4,6 +4,7 @@
 
 /* ── Tema claro ─────────────────────────────────────────── */
 :root {
+  /* Variables propias de Reparaelec */
   --background: #f9fafb;
   --foreground: #111827;
   --surface: #ffffff;
@@ -12,10 +13,28 @@
   --text-muted: #6b7280;
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
+
+  /* Variables shadcn/ui (base-nova) */
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --radius: 0.5rem;
 }
 
 /* ── Tema oscuro ─────────────────────────────────────────── */
 .dark {
+  /* Variables propias de Reparaelec */
   --background: #030712;
   --foreground: #f3f4f6;
   --surface: #111827;
@@ -24,6 +43,22 @@
   --text-muted: #9ca3af;
   --accent: #60a5fa;
   --accent-hover: #93c5fd;
+
+  /* Variables shadcn/ui (base-nova) */
+  --primary: #60a5fa;
+  --primary-foreground: #0f172a;
+  --secondary: #1e293b;
+  --secondary-foreground: #f1f5f9;
+  --muted: #1f2937;
+  --muted-foreground: #9ca3af;
+  --popover: #111827;
+  --popover-foreground: #f3f4f6;
+  --card: #111827;
+  --card-foreground: #f3f4f6;
+  --input: #374151;
+  --ring: #60a5fa;
+  --destructive: #f87171;
+  --destructive-foreground: #0f172a;
 }
 
 /* ── Markdown styling for chat bot messages ─────────────── */
