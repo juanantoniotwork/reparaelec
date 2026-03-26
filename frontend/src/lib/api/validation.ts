@@ -23,10 +23,12 @@ import { z } from 'zod'
 // ── Token ────────────────────────────────────────────────────────────────────
 
 /**
- * Extrae el Bearer token de la cookie "access_token".
- * El middleware de Reparaelec guarda el token ahí tras el login.
+ * Extrae el Bearer token de la request.
+ * Prioridad: Authorization header (enviado por fetchWithAuth) > cookie access_token.
  */
 export function getAuthToken(request: NextRequest): string | null {
+  const authHeader = request.headers.get('authorization')
+  if (authHeader?.startsWith('Bearer ')) return authHeader.slice(7)
   return request.cookies.get('access_token')?.value ?? null
 }
 
