@@ -51,6 +51,15 @@ services:
       - postgres
       - redis
 
+  nginx-internal:
+    image: nginx:alpine
+    container_name: reparaelec_nginx_internal
+    volumes:
+      - ./nginx/internal.conf:/etc/nginx/conf.d/default.conf
+      - ./backend:/var/www/backend
+    depends_on:
+      - php
+
   nextjs:
     build:
       context: .
@@ -58,11 +67,14 @@ services:
     container_name: reparaelec_nextjs
     ports:
       - "3000:3000"
+    environment:
+      - BACKEND_URL=http://nginx-internal:8080/api
     volumes:
       - ./frontend:/var/www/frontend
       - /var/www/frontend/node_modules
     depends_on:
       - php
+      - nginx-internal
 
 volumes:
   postgres_data:

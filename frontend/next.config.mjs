@@ -10,8 +10,9 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/:path*',
-        destination: 'http://reparaelec_nginx/api/:path*',
+        // Excluye /api/admin/* — esas rutas las manejan los route handlers de Next.js
+        source: '/api/:path((?!admin(?:/|$)).*)',
+        destination: 'http://nginx-internal:8080/api/:path*',
       },
     ];
   },

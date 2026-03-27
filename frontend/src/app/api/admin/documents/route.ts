@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     // Reenviar query params (category_id, brand_id)
     const { searchParams } = request.nextUrl
     const qs = searchParams.toString()
-    const url = qs ? `${BACKEND_URL}/documents?${qs}` : `${BACKEND_URL}/admin/documents`
+    const url = qs ? `${BACKEND_URL}/documents?${qs}` : `${BACKEND_URL}/documents`
 
     const response = await fetch(url, {
       method: 'GET',
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
 
-    const response = await fetch(`${BACKEND_URL}/admin/documents`, {
+    const response = await fetch(`${BACKEND_URL}/documents`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

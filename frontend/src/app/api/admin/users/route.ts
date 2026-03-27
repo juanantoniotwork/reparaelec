@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const token = getAuthToken(request)
     if (!token) return unauthorizedResponse()
 
-    const response = await fetch(`${BACKEND_URL}/admin/users`, {
+    const response = await fetch(`${BACKEND_URL}/users`, {
       method: 'GET',
       headers: getProxyHeaders(request, token, false),
     })
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const validation = await validateBody(request, createUserSchema)
     if (validation.error) return validation.error
 
-    const response = await fetch(`${BACKEND_URL}/admin/users`, {
+    const response = await fetch(`${BACKEND_URL}/users`, {
       method: 'POST',
       headers: getProxyHeaders(request, token),
       body: JSON.stringify(validation.data),

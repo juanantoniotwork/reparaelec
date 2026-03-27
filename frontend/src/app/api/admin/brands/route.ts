@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     // Reenviar query params (category_id, etc.)
     const { searchParams } = request.nextUrl
     const qs = searchParams.toString()
-    const url = qs ? `${BACKEND_URL}/brands?${qs}` : `${BACKEND_URL}/admin/brands`
+    const url = qs ? `${BACKEND_URL}/brands?${qs}` : `${BACKEND_URL}/brands`
 
     const response = await fetch(url, {
       method: 'GET',
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const validation = await validateBody(request, createBrandSchema)
     if (validation.error) return validation.error
 
-    const response = await fetch(`${BACKEND_URL}/admin/brands`, {
+    const response = await fetch(`${BACKEND_URL}/brands`, {
       method: 'POST',
       headers: getProxyHeaders(request, token),
       body: JSON.stringify(validation.data),

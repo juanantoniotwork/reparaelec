@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const token = getAuthToken(request)
     if (!token) return unauthorizedResponse()
 
-    const response = await fetch(`${BACKEND_URL}/admin/documents/${id}`, {
+    const response = await fetch(`${BACKEND_URL}/documents/${id}`, {
       method: 'GET',
       headers: getProxyHeaders(request, token, false),
     })
@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // se añade _method=PUT para que lo trate como PUT (Laravel method spoofing).
     formData.append('_method', 'PUT')
 
-    const response = await fetch(`${BACKEND_URL}/admin/documents/${id}`, {
+    const response = await fetch(`${BACKEND_URL}/documents/${id}`, {
       method: 'POST',  // POST + _method=PUT (method spoofing)
       headers: {
         Authorization: `Bearer ${token}`,
@@ -80,7 +80,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const token = getAuthToken(request)
     if (!token) return unauthorizedResponse()
 
-    const response = await fetch(`${BACKEND_URL}/admin/documents/${id}`, {
+    const response = await fetch(`${BACKEND_URL}/documents/${id}`, {
       method: 'DELETE',
       headers: getProxyHeaders(request, token, false),
     })

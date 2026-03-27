@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const token = getAuthToken(request)
     if (!token) return unauthorizedResponse()
 
-    const response = await fetch(`${BACKEND_URL}/admin/categories`, {
+    const response = await fetch(`${BACKEND_URL}/categories`, {
       method: 'GET',
       headers: getProxyHeaders(request, token, false),
     })
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const validation = await validateBody(request, createCategorySchema)
     if (validation.error) return validation.error
 
-    const response = await fetch(`${BACKEND_URL}/admin/categories`, {
+    const response = await fetch(`${BACKEND_URL}/categories`, {
       method: 'POST',
       headers: getProxyHeaders(request, token),
       body: JSON.stringify(validation.data),

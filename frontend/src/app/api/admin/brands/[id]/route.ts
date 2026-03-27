@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const token = getAuthToken(request)
     if (!token) return unauthorizedResponse()
 
-    const response = await fetch(`${BACKEND_URL}/admin/brands/${id}`, {
+    const response = await fetch(`${BACKEND_URL}/brands/${id}`, {
       method: 'GET',
       headers: getProxyHeaders(request, token, false),
     })
@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const validation = await validateBody(request, updateBrandSchema)
     if (validation.error) return validation.error
 
-    const response = await fetch(`${BACKEND_URL}/admin/brands/${id}`, {
+    const response = await fetch(`${BACKEND_URL}/brands/${id}`, {
       method: 'PUT',
       headers: getProxyHeaders(request, token),
       body: JSON.stringify(validation.data),
@@ -73,7 +73,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const token = getAuthToken(request)
     if (!token) return unauthorizedResponse()
 
-    const response = await fetch(`${BACKEND_URL}/admin/brands/${id}`, {
+    const response = await fetch(`${BACKEND_URL}/brands/${id}`, {
       method: 'DELETE',
       headers: getProxyHeaders(request, token, false),
     })
