@@ -1,0 +1,19 @@
+services:
+  nextjs:
+    build:
+      context: ..
+      dockerfile: Dockerfile.nextjs
+    container_name: reparaelec_nextjs
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_URL=http://nginx-internal:8080/api
+    volumes:
+      - .:/var/www/frontend
+      - /var/www/frontend/node_modules
+    networks:
+      - reparaelec_net
+
+networks:
+  reparaelec_net:
+    external: true

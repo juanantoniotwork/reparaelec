@@ -1,0 +1,80 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: reparaelec_postgres
+    environment:
+      POSTGRES_DB: reparaelec
+      POSTGRES_USER: reparaelec
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - reparaelec_net
+
+  redis:
+    image: redis:alpine
+    container_name: reparaelec_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - reparaelec_net
+
+  nginx:
+    image: nginx:alpine
+    container_name: reparaelec_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - .:/var/www/backend
+    depends_on:
+      - php
+    networks:
+      - reparaelec_net
+
+  php:
+    build:
+      context: ..
+      dockerfile: Dockerfile.php
+    container_name: reparaelec_php
+    volumes:
+      - .:/var/www/backend
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - reparaelec_net
+
+  queue:
+    build:
+      context: ..
+      dockerfile: Dockerfile.php
+    container_name: reparaelec_queue
+    command: php /var/www/backend/artisan queue:work --sleep=3 --tries=3 --timeout=120
+    volumes:
+      - .:/var/www/backend
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - reparaelec_net
+
+  nginx-internal:
+    image: nginx:alpine
+    container_name: reparaelec_nginx_internal
+    volumes:
+      - ../nginx/internal.conf:/etc/nginx/conf.d/default.conf
+      - .:/var/www/backend
+    depends_on:
+      - php
+    networks:
+      - reparaelec_net
+
+volumes:
+  postgres_data:
+
+networks:
+  reparaelec_net:
+    external: true
