@@ -7,7 +7,7 @@
  */
 
 import { fetchWithAuth } from '@/lib/api/auth-redirect'
-import type { ApiResult } from '@/lib/api/types'
+import type { ApiResult, PaginatedResponse, Paginated } from '@/lib/api/types'
 
 // ── Tipos de la API (snake_case) ─────────────────────────────────────────────
 
@@ -36,6 +36,14 @@ export interface User {
   updatedAt: string | null
 }
 
+export interface UserPageParams {
+  page?: number
+  per_page?: number
+  name?: string
+  email?: string
+  status?: string  // 'all' | 'active' | 'inactive'
+}
+
 // ── Mapper ───────────────────────────────────────────────────────────────────
 
 function mapApiToUser(api: ApiUser): User {
@@ -57,15 +65,35 @@ const BASE = '/api/admin/users'
 
 // ── CRUD ─────────────────────────────────────────────────────────────────────
 
-export async function getUsers(): Promise<ApiResult<User[]>> {
+export async function getUsers(
+  params?: UserPageParams,
+): Promise<ApiResult<Paginated<User>>> {
   try {
-    const res  = await fetchWithAuth(BASE)
-    const data = await res.json() as ApiUser[] | { error?: string; message?: string }
+    const qs = params
+      ? new URLSearchParams(
+          Object.entries(params)
+            .filter(([, v]) => v != null && v !== '' && v !== 'all')
+            .map(([k, v]) => [k, String(v)]),
+        ).toString()
+      : ''
+    const url = qs ? `${BASE}?${qs}` : BASE
+    const res  = await fetchWithAuth(url)
+    const data = await res.json() as PaginatedResponse<ApiUser> | { error?: string; message?: string }
     if (!res.ok) {
       const err = data as { error?: string; message?: string }
       return { success: false, error: err.error || err.message || 'Error al cargar usuarios' }
     }
-    return { success: true, data: (data as ApiUser[]).map(mapApiToUser) }
+    const paged = data as PaginatedResponse<ApiUser>
+    return {
+      success: true,
+      data: {
+        items:       paged.data.map(mapApiToUser),
+        currentPage: paged.current_page,
+        lastPage:    paged.last_page,
+        perPage:     paged.per_page,
+        total:       paged.total,
+      },
+    }
   } catch {
     return { success: false, error: 'Error de conexión' }
   }

@@ -17,7 +17,8 @@ class BrandController extends Controller
             $query->where('category_id', $request->category_id);
         }
 
-        return response()->json($query->get());
+        $perPage = (int) $request->input('per_page', 15);
+        return response()->json($query->paginate($perPage));
     }
 
     public function store(Request $request)

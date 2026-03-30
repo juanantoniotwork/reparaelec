@@ -196,12 +196,14 @@ export default function InteraccionesPage() {
             render={({ field }) => (
               <Select value={field.value} onValueChange={(v) => field.onChange(v === '__all__' ? '' : v)}>
                 <SelectTrigger className="h-9 min-w-[160px] border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-                  <SelectValue placeholder="Todos" />
+                  <SelectValue placeholder="Todos">
+                    {(v: string | null) => (!v || v === '__all__') ? null : (users.find(u => u.id === v)?.name ?? v)}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__all__">Todos</SelectItem>
                   {users.map(u => (
-                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                    <SelectItem key={u.id} value={u.id} label={u.name}>{u.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

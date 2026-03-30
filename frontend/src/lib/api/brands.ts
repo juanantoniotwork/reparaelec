@@ -7,7 +7,7 @@
  */
 
 import { fetchWithAuth } from '@/lib/api/auth-redirect'
-import type { ApiResult } from '@/lib/api/types'
+import type { ApiResult, PaginatedResponse, Paginated } from '@/lib/api/types'
 
 // ── Tipos de la API (snake_case) ─────────────────────────────────────────────
 
@@ -39,6 +39,12 @@ export interface Brand {
   documentsCount: number
 }
 
+export interface BrandPageParams {
+  page?: number
+  per_page?: number
+  category_id?: string
+}
+
 // ── Mapper ───────────────────────────────────────────────────────────────────
 
 function mapApiToBrand(api: ApiBrand): Brand {
@@ -58,16 +64,35 @@ const BASE = '/api/admin/brands'
 
 // ── CRUD ─────────────────────────────────────────────────────────────────────
 
-export async function getBrands(categoryId?: string): Promise<ApiResult<Brand[]>> {
+export async function getBrands(
+  params?: BrandPageParams,
+): Promise<ApiResult<Paginated<Brand>>> {
   try {
-    const url = categoryId ? `${BASE}?category_id=${categoryId}` : BASE
+    const qs = params
+      ? new URLSearchParams(
+          Object.entries(params)
+            .filter(([, v]) => v != null)
+            .map(([k, v]) => [k, String(v)]),
+        ).toString()
+      : ''
+    const url = qs ? `${BASE}?${qs}` : BASE
     const res  = await fetchWithAuth(url)
-    const data = await res.json() as ApiBrand[] | { error?: string; message?: string }
+    const data = await res.json() as PaginatedResponse<ApiBrand> | { error?: string; message?: string }
     if (!res.ok) {
       const err = data as { error?: string; message?: string }
       return { success: false, error: err.error || err.message || 'Error al cargar marcas' }
     }
-    return { success: true, data: (data as ApiBrand[]).map(mapApiToBrand) }
+    const paged = data as PaginatedResponse<ApiBrand>
+    return {
+      success: true,
+      data: {
+        items:       paged.data.map(mapApiToBrand),
+        currentPage: paged.current_page,
+        lastPage:    paged.last_page,
+        perPage:     paged.per_page,
+        total:       paged.total,
+      },
+    }
   } catch {
     return { success: false, error: 'Error de conexión' }
   }

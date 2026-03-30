@@ -12,7 +12,9 @@ export async function GET(request: NextRequest) {
     const token = getAuthToken(request)
     if (!token) return unauthorizedResponse()
 
-    const response = await fetch(`${BACKEND_URL}/categories`, {
+    const qs = request.nextUrl.searchParams.toString()
+    const url = qs ? `${BACKEND_URL}/categories?${qs}` : `${BACKEND_URL}/categories`
+    const response = await fetch(url, {
       method: 'GET',
       headers: getProxyHeaders(request, token, false),
     })

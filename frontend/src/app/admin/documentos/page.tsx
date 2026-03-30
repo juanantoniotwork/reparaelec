@@ -209,13 +209,13 @@ export default function DocumentosPage() {
     setFetchError('')
     const [docsRes, catsRes, brandsRes] = await Promise.all([
       getDocuments(),
-      getCategories(),
-      getBrands(),
+      getCategories({ per_page: 9999 }),
+      getBrands({ per_page: 9999 }),
     ])
     if (docsRes.success && catsRes.success && brandsRes.success) {
       setDocuments(docsRes.data!)
-      setCategories(catsRes.data!)
-      setBrands(brandsRes.data!)
+      setCategories(catsRes.data!.items)
+      setBrands(brandsRes.data!.items)
     } else {
       setFetchError(docsRes.error || catsRes.error || brandsRes.error || 'Error al cargar datos.')
     }
@@ -401,11 +401,13 @@ export default function DocumentosPage() {
           }}
         >
           <SelectTrigger className="h-8 min-w-[180px] border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm">
-            <SelectValue placeholder="Todas las categorías" />
+            <SelectValue placeholder="Todas las categorías">
+              {(v: string | null) => v ? (categories.find(c => c.id === v)?.name ?? v) : null}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {categories.map(cat => (
-              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+              <SelectItem key={cat.id} value={cat.id} label={cat.name}>{cat.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -416,11 +418,13 @@ export default function DocumentosPage() {
           onValueChange={(v) => setFilterBrandId(v ?? '')}
         >
           <SelectTrigger className="h-8 min-w-[160px] border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm">
-            <SelectValue placeholder="Todas las marcas" />
+            <SelectValue placeholder="Todas las marcas">
+              {(v: string | null) => v ? (brands.find(b => b.id === v)?.name ?? v) : null}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {filterBrands.map(brand => (
-              <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
+              <SelectItem key={brand.id} value={brand.id} label={brand.name}>{brand.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -619,11 +623,13 @@ export default function DocumentosPage() {
                       aria-invalid={!!errors.categoryId}
                       className="w-full h-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
-                      <SelectValue placeholder="Selecciona una categoría" />
+                      <SelectValue placeholder="Selecciona una categoría">
+                        {(v: string | null) => v ? (categories.find(c => c.id === v)?.name ?? v) : null}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map(cat => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                        <SelectItem key={cat.id} value={cat.id} label={cat.name}>{cat.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

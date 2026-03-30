@@ -25,6 +25,17 @@ export interface PaginatedResponse<T> {
 }
 
 /**
+ * Versión camelCase de PaginatedResponse para uso en el frontend.
+ */
+export interface Paginated<T> {
+  items: T[]
+  currentPage: number
+  lastPage: number
+  perPage: number
+  total: number
+}
+
+/**
  * Respuesta de recurso único envuelta en { data: T }.
  * Algunos endpoints de Laravel usan este formato con API Resources.
  */

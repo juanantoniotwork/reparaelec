@@ -10,9 +10,22 @@ use App\Enums\Role;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(User::all());
+        $query = User::query();
+
+        if ($request->filled('name')) {
+            $query->where('name', 'ilike', '%' . $request->name . '%');
+        }
+        if ($request->filled('email')) {
+            $query->where('email', 'ilike', '%' . $request->email . '%');
+        }
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('is_active', $request->status === 'active');
+        }
+
+        $perPage = (int) $request->input('per_page', 15);
+        return response()->json($query->paginate($perPage));
     }
 
     public function show(User $user)

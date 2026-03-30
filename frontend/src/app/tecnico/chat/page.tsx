@@ -209,8 +209,8 @@ function ChatContent() {
 
   // Cargar categorías
   useEffect(() => {
-    getCategories()
-      .then(r => { if (r.success) setCategories(r.data!) })
+    getCategories({ per_page: 100 })
+      .then(r => { if (r.success) setCategories(r.data!.items) })
       .catch(() => {})
   }, [])
 

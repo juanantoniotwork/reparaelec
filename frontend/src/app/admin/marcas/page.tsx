@@ -15,6 +15,7 @@ import {
 import { getCategories, type Category } from '@/lib/api/categories'
 import { brandFormSchema, type BrandForm } from '@/lib/schemas'
 import { handleApiErrors, type FieldMap } from '@/lib/form-errors'
+import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import { Button }  from '@/components/ui/button'
 import { Input }   from '@/components/ui/input'
@@ -38,6 +39,12 @@ export default function MarcasPage() {
   const [loading, setLoading]       = useState(true)
   const [fetchError, setFetchError] = useState('')
   const [filterCategoryId, setFilterCategoryId] = useState('')
+
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1)
+  const [lastPage, setLastPage]       = useState(1)
+  const [total, setTotal]             = useState(0)
+  const [perPage, setPerPage]         = useState(10)
 
   // Formulario (crear / editar)
   const [dialogOpen, setDialogOpen]       = useState(false)
@@ -64,31 +71,34 @@ export default function MarcasPage() {
   })
 
   // ── Carga ────────────────────────────────────────────────────────────────────
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (page: number, pp: number, catFilter: string) => {
     setLoading(true)
     setFetchError('')
-    const [brandsRes, catsRes] = await Promise.all([getBrands(), getCategories()])
+    const [brandsRes, catsRes] = await Promise.all([
+      getBrands({ page, per_page: pp, category_id: catFilter || undefined }),
+      getCategories({ per_page: 9999 }),
+    ])
     if (brandsRes.success && brandsRes.data && catsRes.success && catsRes.data) {
-      setBrands(brandsRes.data)
-      setCategories(catsRes.data)
+      setBrands(brandsRes.data.items)
+      setCurrentPage(brandsRes.data.currentPage)
+      setLastPage(brandsRes.data.lastPage)
+      setTotal(brandsRes.data.total)
+      setCategories(catsRes.data.items)
     } else {
       setFetchError(brandsRes.error || catsRes.error || 'No se pudieron cargar las marcas.')
     }
     setLoading(false)
   }, [])
 
-  useEffect(() => { loadData() }, [loadData])
+  useEffect(() => {
+    loadData(currentPage, perPage, filterCategoryId)
+  }, [loadData, currentPage, perPage, filterCategoryId])
 
   useEffect(() => {
     const close = () => setOpenDropdown(null)
     document.addEventListener('click', close)
     return () => document.removeEventListener('click', close)
   }, [])
-
-  // ── Filtro ───────────────────────────────────────────────────────────────────
-  const filteredBrands = filterCategoryId
-    ? brands.filter(b => b.categoryId === filterCategoryId)
-    : brands
 
   // ── Dialog crear / editar ────────────────────────────────────────────────────
   const openCreateDialog = () => {
@@ -129,7 +139,7 @@ export default function MarcasPage() {
 
     if (result.success) {
       closeDialog()
-      await loadData()
+      await loadData(currentPage, perPage, filterCategoryId)
     } else {
       const { unmappedErrors } = handleApiErrors<BrandForm>({
         errors:       result.errors,
@@ -158,7 +168,7 @@ export default function MarcasPage() {
     if (result.success) {
       setDeleteDialogOpen(false)
       setBrandToDelete(null)
-      await loadData()
+      await loadData(currentPage, perPage, filterCategoryId)
     } else {
       setDeleteError(result.error || 'Error al eliminar la marca.')
     }
@@ -185,26 +195,31 @@ export default function MarcasPage() {
           <Filter className="w-4 h-4" />
           <span className="font-medium">Filtrar:</span>
         </div>
-        <Select value={filterCategoryId} onValueChange={(v) => setFilterCategoryId(v ?? '')}>
+        <Select
+          value={filterCategoryId}
+          onValueChange={(v) => { setFilterCategoryId(v ?? ''); setCurrentPage(1) }}
+        >
           <SelectTrigger className="h-8 min-w-[180px] border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm">
-            <SelectValue placeholder="Todas las categorías" />
+            <SelectValue placeholder="Todas las categorías">
+              {(v: string | null) => v ? (categories.find(c => c.id === v)?.name ?? v) : null}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {categories.map(cat => (
-              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+              <SelectItem key={cat.id} value={cat.id} label={cat.name}>{cat.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         {filterCategoryId && (
           <button
-            onClick={() => setFilterCategoryId('')}
+            onClick={() => { setFilterCategoryId(''); setCurrentPage(1) }}
             className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 flex items-center gap-1"
           >
             <X className="w-3 h-3" /> Limpiar
           </button>
         )}
         <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">
-          {filteredBrands.length} marca{filteredBrands.length !== 1 ? 's' : ''}
+          {total} marca{total !== 1 ? 's' : ''}
         </span>
       </div>
 
@@ -220,13 +235,13 @@ export default function MarcasPage() {
             <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
             <p className="font-medium">{fetchError}</p>
             <button
-              onClick={loadData}
+              onClick={() => loadData(currentPage, perPage, filterCategoryId)}
               className="mt-4 flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold"
             >
               <RefreshCw className="w-4 h-4 mr-2" /> Reintentar
             </button>
           </div>
-        ) : filteredBrands.length === 0 ? (
+        ) : brands.length === 0 ? (
           <div className="p-16 text-center text-gray-400 dark:text-gray-500">
             <Bookmark className="w-10 h-10 mx-auto mb-3 opacity-40" />
             <p>No hay marcas registradas.</p>
@@ -238,65 +253,76 @@ export default function MarcasPage() {
             </button>
           </div>
         ) : (
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300">
-              <tr>
-                <th className="px-6 py-4 text-sm font-semibold">Nombre</th>
-                <th className="px-6 py-4 text-sm font-semibold">Slug</th>
-                <th className="px-6 py-4 text-sm font-semibold">Categoría</th>
-                <th className="px-6 py-4 text-sm font-semibold">Documentos</th>
-                <th className="px-6 py-4 text-sm font-semibold text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
-              {filteredBrands.map(brand => (
-                <tr key={brand.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-purple-50 dark:bg-purple-900/30 p-2 rounded-lg">
-                        <Bookmark className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{brand.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-mono text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                      /{brand.slug}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium px-2.5 py-1 rounded-full">
-                      <Tag className="w-3 h-3" />
-                      {brand.categoryName || '—'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-                      <FileText className="w-4 h-4" />
-                      {brand.documentsCount}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={(e) => {
-                        e.nativeEvent.stopImmediatePropagation()
-                        if (openDropdown === brand.id) {
-                          setOpenDropdown(null)
-                        } else {
-                          const rect = e.currentTarget.getBoundingClientRect()
-                          setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
-                          setOpenDropdown(brand.id)
-                        }
-                      }}
-                      className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
-                  </td>
+          <>
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                <tr>
+                  <th className="px-6 py-4 text-sm font-semibold">Nombre</th>
+                  <th className="px-6 py-4 text-sm font-semibold">Slug</th>
+                  <th className="px-6 py-4 text-sm font-semibold">Categoría</th>
+                  <th className="px-6 py-4 text-sm font-semibold">Documentos</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-right">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
+                {brands.map(brand => (
+                  <tr key={brand.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-purple-50 dark:bg-purple-900/30 p-2 rounded-lg">
+                          <Bookmark className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{brand.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                        /{brand.slug}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium px-2.5 py-1 rounded-full">
+                        <Tag className="w-3 h-3" />
+                        {brand.categoryName || '—'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+                        <FileText className="w-4 h-4" />
+                        {brand.documentsCount}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.nativeEvent.stopImmediatePropagation()
+                          if (openDropdown === brand.id) {
+                            setOpenDropdown(null)
+                          } else {
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+                            setOpenDropdown(brand.id)
+                          }
+                        }}
+                        className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <PaginationControls
+              currentPage={currentPage}
+              lastPage={lastPage}
+              total={total}
+              perPage={perPage}
+              onPageChange={(p) => setCurrentPage(p)}
+              onPerPageChange={(pp) => { setPerPage(pp); setCurrentPage(1) }}
+            />
+          </>
         )}
       </div>
 
@@ -361,11 +387,13 @@ export default function MarcasPage() {
                       aria-invalid={!!errors.categoryId}
                       className="w-full h-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
-                      <SelectValue placeholder="Selecciona una categoría" />
+                      <SelectValue placeholder="Selecciona una categoría">
+                        {(v: string | null) => v ? (categories.find(c => c.id === v)?.name ?? v) : null}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map(cat => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                        <SelectItem key={cat.id} value={cat.id} label={cat.name}>{cat.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

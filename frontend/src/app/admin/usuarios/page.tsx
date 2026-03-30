@@ -13,6 +13,7 @@ import {
 import { getUsers, createUser, updateUser, deleteUser, type User } from '@/lib/api/users'
 import { createUserFormSchema, type CreateUserForm } from '@/lib/schemas'
 import { handleApiErrors, type FieldMap } from '@/lib/form-errors'
+import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import { Button } from '@/components/ui/button'
 import { Input }  from '@/components/ui/input'
@@ -27,8 +28,6 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
-
-const PER_PAGE = 10
 
 const apiFieldMap: FieldMap<CreateUserForm> = {
   name:     'name',
@@ -47,21 +46,26 @@ function formatDate(str: string | null | undefined): string {
   )
 }
 
+type AppliedFilters = { name: string; email: string; status: string }
+
 export default function UsuariosPage() {
   const router = useRouter()
 
   const [users, setUsers]     = useState<User[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Filters
-  const [filtersOpen, setFiltersOpen]     = useState(true)
-  const [filterName, setFilterName]       = useState('')
-  const [filterEmail, setFilterEmail]     = useState('')
-  const [filterStatus, setFilterStatus]   = useState('all')
-  const [applied, setApplied] = useState({ name: '', email: '', status: 'all' })
+  // Filters UI state
+  const [filtersOpen, setFiltersOpen]   = useState(true)
+  const [filterName, setFilterName]     = useState('')
+  const [filterEmail, setFilterEmail]   = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [applied, setApplied] = useState<AppliedFilters>({ name: '', email: '', status: 'all' })
 
   // Pagination
-  const [page, setPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [lastPage, setLastPage]       = useState(1)
+  const [total, setTotal]             = useState(0)
+  const [perPage, setPerPage]         = useState(10)
 
   // Checkboxes
   const [selected, setSelected] = useState<string[]>([])
@@ -91,45 +95,50 @@ export default function UsuariosPage() {
     defaultValues: { name: '', email: '', password: '', role: 'tecnico' },
   })
 
-  // ── Carga ────────────────────────────────────────────────────────────────────
-  const loadUsers = useCallback(async () => {
+  // ── Carga (server-side pagination + filters) ─────────────────────────────────
+  const loadUsers = useCallback(async (
+    page: number,
+    pp: number,
+    filters: AppliedFilters,
+  ) => {
     setLoading(true)
-    const result = await getUsers()
-    if (result.success && result.data) setUsers(result.data)
+    const result = await getUsers({
+      page,
+      per_page: pp,
+      name:   filters.name   || undefined,
+      email:  filters.email  || undefined,
+      status: filters.status !== 'all' ? filters.status : undefined,
+    })
+    if (result.success && result.data) {
+      setUsers(result.data.items)
+      setCurrentPage(result.data.currentPage)
+      setLastPage(result.data.lastPage)
+      setTotal(result.data.total)
+      setSelected([])
+    }
     setLoading(false)
   }, [])
 
-  useEffect(() => { loadUsers() }, [loadUsers])
+  useEffect(() => {
+    loadUsers(currentPage, perPage, applied)
+  }, [loadUsers, currentPage, perPage, applied])
 
-  // ── Filtros aplicados ─────────────────────────────────────────────────────────
-  const filtered = users.filter(u => {
-    const matchName   = u.name.toLowerCase().includes(applied.name.toLowerCase())
-    const matchEmail  = u.email.toLowerCase().includes(applied.email.toLowerCase())
-    const matchStatus =
-      applied.status === 'all' ||
-      (applied.status === 'active'   &&  u.isActive) ||
-      (applied.status === 'inactive' && !u.isActive)
-    return matchName && matchEmail && matchStatus
-  })
-
-  const totalPages = Math.ceil(filtered.length / PER_PAGE)
-  const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-  const rangeStart = filtered.length === 0 ? 0 : (page - 1) * PER_PAGE + 1
-  const rangeEnd   = Math.min(page * PER_PAGE, filtered.length)
-
+  // ── Filtros ───────────────────────────────────────────────────────────────────
   const applyFilters = () => {
-    setApplied({ name: filterName, email: filterEmail, status: filterStatus })
-    setPage(1); setSelected([])
+    const next = { name: filterName, email: filterEmail, status: filterStatus }
+    setApplied(next)
+    setCurrentPage(1)
   }
+
   const resetFilters = () => {
     setFilterName(''); setFilterEmail(''); setFilterStatus('all')
     setApplied({ name: '', email: '', status: 'all' })
-    setPage(1); setSelected([])
+    setCurrentPage(1)
   }
 
   // ── Selección ────────────────────────────────────────────────────────────────
   const toggleAll = () =>
-    setSelected(selected.length === paginated.length ? [] : paginated.map(u => u.id))
+    setSelected(selected.length === users.length ? [] : users.map(u => u.id))
   const toggleOne = (id: string) =>
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
 
@@ -159,7 +168,8 @@ export default function UsuariosPage() {
     })
     if (result.success) {
       closeDialog()
-      await loadUsers()
+      await loadUsers(1, perPage, applied)
+      setCurrentPage(1)
     } else {
       const { unmappedErrors } = handleApiErrors<CreateUserForm>({
         errors:       result.errors,
@@ -175,7 +185,7 @@ export default function UsuariosPage() {
   const handleToggleStatus = async (user: User) => {
     setOpenMenu(null)
     await updateUser(user.id, { is_active: !user.isActive })
-    await loadUsers()
+    await loadUsers(currentPage, perPage, applied)
   }
 
   // ── Dialog eliminar ──────────────────────────────────────────────────────────
@@ -195,17 +205,17 @@ export default function UsuariosPage() {
     if (result.success) {
       setDeleteDialogOpen(false)
       setUserToDelete(null)
-      await loadUsers()
+      await loadUsers(currentPage, perPage, applied)
     } else {
       setDeleteError(result.error || 'Error al eliminar el usuario.')
     }
   }
 
-  // ── Exportar CSV ─────────────────────────────────────────────────────────────
+  // ── Exportar CSV (página actual) ──────────────────────────────────────────────
   const exportCSV = () => {
     setOpenToolbar(false)
     const header = ['Nombre', 'Email', 'Rol', 'Estado', 'Último acceso']
-    const rows   = filtered.map(u => [
+    const rows   = users.map(u => [
       u.name,
       u.email,
       u.role,
@@ -355,7 +365,7 @@ export default function UsuariosPage() {
                     <th className="px-4 py-3 w-10">
                       <input
                         type="checkbox"
-                        checked={paginated.length > 0 && selected.length === paginated.length}
+                        checked={users.length > 0 && selected.length === users.length}
                         onChange={toggleAll}
                         className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                       />
@@ -369,7 +379,7 @@ export default function UsuariosPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                  {paginated.map(user => (
+                  {users.map(user => (
                     <tr
                       key={user.id}
                       onDoubleClick={() => router.push(`/admin/usuarios/${user.id}`)}
@@ -445,7 +455,7 @@ export default function UsuariosPage() {
                     </tr>
                   ))}
 
-                  {paginated.length === 0 && (
+                  {users.length === 0 && (
                     <tr>
                       <td colSpan={7} className="py-14 text-center text-sm text-gray-400 dark:text-gray-500">
                         No se encontraron usuarios.
@@ -456,27 +466,14 @@ export default function UsuariosPage() {
               </table>
             </div>
 
-            {/* Paginación */}
-            <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {filtered.length === 0 ? '0 / 0' : `${rangeStart}–${rangeEnd} / ${filtered.length}`}
-              </span>
-              {totalPages > 1 && (
-                <div className="flex items-center gap-1">
-                  <button
-                    disabled={page === 1}
-                    onClick={() => setPage(p => p - 1)}
-                    className="px-3 py-1 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >‹</button>
-                  <span className="px-3 py-1 text-sm text-gray-500 dark:text-gray-400">{page} / {totalPages}</span>
-                  <button
-                    disabled={page === totalPages}
-                    onClick={() => setPage(p => p + 1)}
-                    className="px-3 py-1 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >›</button>
-                </div>
-              )}
-            </div>
+            <PaginationControls
+              currentPage={currentPage}
+              lastPage={lastPage}
+              total={total}
+              perPage={perPage}
+              onPageChange={(p) => setCurrentPage(p)}
+              onPerPageChange={(pp) => { setPerPage(pp); setCurrentPage(1) }}
+            />
           </>
         )}
       </div>

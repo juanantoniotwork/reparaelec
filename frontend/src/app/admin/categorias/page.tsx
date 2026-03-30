@@ -14,6 +14,7 @@ import {
 } from '@/lib/api/categories'
 import { categoryFormSchema, type CategoryForm } from '@/lib/schemas'
 import { handleApiErrors, type FieldMap } from '@/lib/form-errors'
+import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import { Button }   from '@/components/ui/button'
 import { Input }    from '@/components/ui/input'
@@ -33,6 +34,12 @@ export default function CategoriasPage() {
   const [categories, setCategories]   = useState<Category[]>([])
   const [loading, setLoading]         = useState(true)
   const [fetchError, setFetchError]   = useState('')
+
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1)
+  const [lastPage, setLastPage]       = useState(1)
+  const [total, setTotal]             = useState(0)
+  const [perPage, setPerPage]         = useState(10)
 
   // Formulario (crear / editar)
   const [dialogOpen, setDialogOpen]           = useState(false)
@@ -59,19 +66,22 @@ export default function CategoriasPage() {
   })
 
   // ── Carga ────────────────────────────────────────────────────────────────────
-  const loadCategories = useCallback(async () => {
+  const loadCategories = useCallback(async (page: number, pp: number) => {
     setLoading(true)
     setFetchError('')
-    const result = await getCategories()
+    const result = await getCategories({ page, per_page: pp })
     if (result.success && result.data) {
-      setCategories(result.data)
+      setCategories(result.data.items)
+      setCurrentPage(result.data.currentPage)
+      setLastPage(result.data.lastPage)
+      setTotal(result.data.total)
     } else {
       setFetchError(result.error || 'No se pudieron cargar las categorías.')
     }
     setLoading(false)
   }, [])
 
-  useEffect(() => { loadCategories() }, [loadCategories])
+  useEffect(() => { loadCategories(currentPage, perPage) }, [loadCategories, currentPage, perPage])
 
   // Cierra el dropdown al hacer clic fuera
   useEffect(() => {
@@ -119,7 +129,7 @@ export default function CategoriasPage() {
 
     if (result.success) {
       closeDialog()
-      await loadCategories()
+      await loadCategories(currentPage, perPage)
     } else {
       const { unmappedErrors } = handleApiErrors<CategoryForm>({
         errors:       result.errors,
@@ -148,7 +158,7 @@ export default function CategoriasPage() {
     if (result.success) {
       setDeleteDialogOpen(false)
       setCategoryToDelete(null)
-      await loadCategories()
+      await loadCategories(currentPage, perPage)
     } else {
       setDeleteError(result.error || 'Error al eliminar la categoría.')
     }
@@ -181,7 +191,7 @@ export default function CategoriasPage() {
             <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
             <p className="font-medium">{fetchError}</p>
             <button
-              onClick={loadCategories}
+              onClick={() => loadCategories(currentPage, perPage)}
               className="mt-4 flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold"
             >
               <RefreshCw className="w-4 h-4 mr-2" /> Reintentar
@@ -199,58 +209,69 @@ export default function CategoriasPage() {
             </button>
           </div>
         ) : (
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300">
-              <tr>
-                <th className="px-6 py-4 text-sm font-semibold">Nombre</th>
-                <th className="px-6 py-4 text-sm font-semibold">Slug</th>
-                <th className="px-6 py-4 text-sm font-semibold">Documentos</th>
-                <th className="px-6 py-4 text-sm font-semibold text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
-              {categories.map(cat => (
-                <tr key={cat.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg">
-                        <Tag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{cat.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-mono text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                      /{cat.slug}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-                      <FileText className="w-4 h-4" />
-                      {cat.documentsCount}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={(e) => {
-                        e.nativeEvent.stopImmediatePropagation()
-                        if (openDropdown === cat.id) {
-                          setOpenDropdown(null)
-                        } else {
-                          const rect = e.currentTarget.getBoundingClientRect()
-                          setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
-                          setOpenDropdown(cat.id)
-                        }
-                      }}
-                      className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
-                  </td>
+          <>
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                <tr>
+                  <th className="px-6 py-4 text-sm font-semibold">Nombre</th>
+                  <th className="px-6 py-4 text-sm font-semibold">Slug</th>
+                  <th className="px-6 py-4 text-sm font-semibold">Documentos</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-right">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
+                {categories.map(cat => (
+                  <tr key={cat.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg">
+                          <Tag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{cat.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                        /{cat.slug}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+                        <FileText className="w-4 h-4" />
+                        {cat.documentsCount}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.nativeEvent.stopImmediatePropagation()
+                          if (openDropdown === cat.id) {
+                            setOpenDropdown(null)
+                          } else {
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+                            setOpenDropdown(cat.id)
+                          }
+                        }}
+                        className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <PaginationControls
+              currentPage={currentPage}
+              lastPage={lastPage}
+              total={total}
+              perPage={perPage}
+              onPageChange={(p) => setCurrentPage(p)}
+              onPerPageChange={(pp) => { setPerPage(pp); setCurrentPage(1) }}
+            />
+          </>
         )}
       </div>
 

@@ -9,9 +9,12 @@ use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Category::withCount('documents')->get());
+        $perPage = (int) $request->input('per_page', 15);
+        return response()->json(
+            Category::withCount('documents')->paginate($perPage)
+        );
     }
 
     public function store(Request $request)
