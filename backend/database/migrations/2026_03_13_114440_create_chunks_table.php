@@ -18,7 +18,11 @@ return new class extends Migration
             $table->integer('page_number')->nullable();
             $table->string('section')->nullable();
             $table->integer('token_count')->nullable();
-            $table->vector('embedding', 1536)->nullable();
+            if (config('database.default') === 'pgsql') {
+                $table->vector('embedding', 768)->nullable();
+            } else {
+                $table->longText('embedding')->nullable(); // JSON serializado para MariaDB
+            }
             $table->timestamps();
         });
     }

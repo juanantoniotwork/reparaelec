@@ -15,7 +15,11 @@ return new class extends Migration
             $table->id();
             $table->text('query');
             $table->text('response');
-            $table->vector('embedding', 1536);
+            if (config('database.default') === 'pgsql') {
+                $table->vector('embedding', 768);
+            } else {
+                $table->longText('embedding'); // JSON serializado para MariaDB
+            }
             $table->json('category_ids')->nullable();
             $table->integer('hit_count')->default(0);
             $table->timestamps();

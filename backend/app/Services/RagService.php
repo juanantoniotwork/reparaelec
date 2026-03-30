@@ -69,21 +69,8 @@ class RagService
         }
 
         // 3. Buscar los N chunks más similares
-        $ragChunks = Setting::get('rag_chunks', 2);
-
-        $chunksQuery = Chunk::query()
-            ->select('chunks.*')
-            ->join('documents', 'chunks.document_id', '=', 'documents.id')
-            ->orderByRaw('embedding <-> ?', [json_encode($questionEmbedding)])
-            ->limit($ragChunks);
-
-        if (!empty($categoryIds)) {
-            $chunksQuery->whereHas('document.categories', function ($q) use ($categoryIds) {
-                $q->whereIn('categories.id', $categoryIds);
-            });
-        }
-
-        $relevantChunks = $chunksQuery->get();
+        $ragChunks      = (int) Setting::get('rag_chunks', 2);
+        $relevantChunks = $this->findSimilarChunks($questionEmbedding, $ragChunks, $categoryIds);
 
         if ($relevantChunks->isEmpty()) {
             return [
@@ -188,26 +175,13 @@ class RagService
         }
 
         // 3. Buscar los N chunks más similares
-        $ragChunks = Setting::get('rag_chunks', 2);
-
-        $chunksQuery = Chunk::query()
-            ->select('chunks.*')
-            ->join('documents', 'chunks.document_id', '=', 'documents.id')
-            ->orderByRaw('embedding <-> ?', [json_encode($questionEmbedding)])
-            ->limit($ragChunks);
-
-        if (!empty($categoryIds)) {
-            $chunksQuery->whereHas('document.categories', function ($q) use ($categoryIds) {
-                $q->whereIn('categories.id', $categoryIds);
-            });
-        }
-
-        $relevantChunks = $chunksQuery->get();
+        $ragChunks      = (int) Setting::get('rag_chunks', 2);
+        $relevantChunks = $this->findSimilarChunks($questionEmbedding, $ragChunks, $categoryIds);
 
         if ($relevantChunks->isEmpty()) {
             return [
-                'type'   => 'empty',
-                'answer' => "No he encontrado información relevante en los manuales disponibles.",
+                'type'    => 'empty',
+                'answer'  => "No he encontrado información relevante en los manuales disponibles.",
                 'sources' => [],
             ];
         }
@@ -254,21 +228,44 @@ class RagService
     }
 
     /**
-     * Busca respuesta en caché semántica con similitud > 0.92.
+     * Busca respuesta en caché semántica con similitud > threshold.
      */
     protected function findCachedResponse(array $embedding, array $categoryIds): ?array
     {
-        // Distancia coseno: 1 - similitud. Para similitud > threshold, distancia < 1 - threshold
-        $threshold     = Setting::get('cache_threshold', 0.92);
-        $maxDistance   = 1 - $threshold;
-        $embeddingJson = json_encode($embedding);
+        $threshold = (float) Setting::get('cache_threshold', 0.92);
 
-        $hit = SemanticCache::query()
-            ->selectRaw('*, (embedding <=> ?) as distance', [$embeddingJson])
-            ->whereRaw('(embedding <=> ?) < ?', [$embeddingJson, $maxDistance])
-            ->whereRaw('category_ids::text = ?', [json_encode($categoryIds)])
-            ->orderByRaw('embedding <=> ?', [$embeddingJson])
-            ->first();
+        if (config('database.default') === 'pgsql') {
+            $maxDistance   = 1 - $threshold;
+            $embeddingJson = json_encode($embedding);
+
+            $hit = SemanticCache::query()
+                ->selectRaw('*, (embedding <=> ?) as distance', [$embeddingJson])
+                ->whereRaw('(embedding <=> ?) < ?', [$embeddingJson, $maxDistance])
+                ->whereRaw('category_ids::text = ?', [json_encode($categoryIds)])
+                ->orderByRaw('embedding <=> ?', [$embeddingJson])
+                ->first();
+        } else {
+            // MariaDB: cosine similarity en PHP
+            $categoryJson = json_encode($categoryIds);
+            $candidates   = SemanticCache::whereRaw(
+                'JSON_UNQUOTE(JSON_EXTRACT(category_ids, "$")) = ?',
+                [$categoryJson]
+            )->whereNotNull('embedding')->get();
+
+            $best = null;
+            $bestSim = -1.0;
+            foreach ($candidates as $entry) {
+                $entryEmbedding = is_array($entry->embedding)
+                    ? $entry->embedding
+                    : json_decode($entry->embedding, true);
+                $sim = $this->cosineSimilarity($embedding, $entryEmbedding);
+                if ($sim > $bestSim) {
+                    $bestSim = $sim;
+                    $best    = $entry;
+                }
+            }
+            $hit = ($bestSim >= $threshold) ? $best : null;
+        }
 
         if (!$hit) {
             return null;
@@ -277,9 +274,75 @@ class RagService
         $hit->increment('hit_count');
 
         return [
-            'answer' => $hit->response,
+            'answer'  => $hit->response,
             'sources' => $hit->sources ?? [],
-            'cached' => true,
+            'cached'  => true,
         ];
+    }
+
+    /**
+     * Devuelve los N chunks más similares al embedding dado.
+     * En PostgreSQL usa el operador <-> de pgvector.
+     * En MariaDB carga todos los embeddings y calcula cosine similarity en PHP.
+     */
+    protected function findSimilarChunks(array $embedding, int $limit, array $categoryIds): \Illuminate\Support\Collection
+    {
+        if (config('database.default') === 'pgsql') {
+            $query = Chunk::query()
+                ->select('chunks.*')
+                ->join('documents', 'chunks.document_id', '=', 'documents.id')
+                ->orderByRaw('embedding <-> ?', [json_encode($embedding)])
+                ->limit($limit);
+
+            if (!empty($categoryIds)) {
+                $query->whereHas('document.categories', function ($q) use ($categoryIds) {
+                    $q->whereIn('categories.id', $categoryIds);
+                });
+            }
+
+            return $query->get();
+        }
+
+        // MariaDB: cargar todos los chunks con embedding y ordenar en PHP
+        $query = Chunk::query()
+            ->select('chunks.*')
+            ->join('documents', 'chunks.document_id', '=', 'documents.id')
+            ->whereNotNull('chunks.embedding');
+
+        if (!empty($categoryIds)) {
+            $query->whereHas('document.categories', function ($q) use ($categoryIds) {
+                $q->whereIn('categories.id', $categoryIds);
+            });
+        }
+
+        return $query->get()
+            ->map(function ($chunk) use ($embedding) {
+                $chunkEmbedding = is_array($chunk->embedding)
+                    ? $chunk->embedding
+                    : json_decode($chunk->embedding, true);
+                $chunk->_similarity = $this->cosineSimilarity($embedding, $chunkEmbedding ?? []);
+                return $chunk;
+            })
+            ->sortByDesc('_similarity')
+            ->take($limit)
+            ->values();
+    }
+
+    /**
+     * Cosine similarity entre dos vectores de igual dimensión.
+     */
+    protected function cosineSimilarity(array $a, array $b): float
+    {
+        $dot = 0.0; $normA = 0.0; $normB = 0.0;
+        $len = min(count($a), count($b));
+        for ($i = 0; $i < $len; $i++) {
+            $dot   += $a[$i] * $b[$i];
+            $normA += $a[$i] ** 2;
+            $normB += $b[$i] ** 2;
+        }
+        if ($normA === 0.0 || $normB === 0.0) {
+            return 0.0;
+        }
+        return $dot / (sqrt($normA) * sqrt($normB));
     }
 }

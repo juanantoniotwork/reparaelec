@@ -17,9 +17,12 @@ class Chunk extends Model
         'embedding',
     ];
 
-    protected $casts = [
-        'embedding' => Vector::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'embedding' => config('database.default') === 'pgsql' ? Vector::class : 'array',
+        ];
+    }
 
     public function document(): BelongsTo
     {

@@ -18,10 +18,13 @@ class SemanticCache extends Model
         'hit_count',
     ];
 
-    protected $casts = [
-        'category_ids' => 'array',
-        'sources' => 'array',
-        'hit_count' => 'integer',
-        'embedding' => Vector::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'category_ids' => 'array',
+            'sources'      => 'array',
+            'hit_count'    => 'integer',
+            'embedding'    => config('database.default') === 'pgsql' ? Vector::class : 'array',
+        ];
+    }
 }

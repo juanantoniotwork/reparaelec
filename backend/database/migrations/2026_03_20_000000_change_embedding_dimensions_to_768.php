@@ -10,10 +10,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement('ALTER TABLE chunks ALTER COLUMN embedding TYPE vector(768)');
-        DB::statement('ALTER TABLE semantic_cache ALTER COLUMN embedding TYPE vector(768)');
-
-        // Clear existing embeddings since dimensions changed
+        if (config('database.default') === 'pgsql') {
+            DB::statement('ALTER TABLE chunks ALTER COLUMN embedding TYPE vector(768)');
+            DB::statement('ALTER TABLE semantic_cache ALTER COLUMN embedding TYPE vector(768)');
+        }
+        // En MariaDB la columna ya es LONGTEXT desde la migración inicial — solo limpiar datos
         DB::table('chunks')->update(['embedding' => null]);
         DB::table('semantic_cache')->truncate();
     }
@@ -23,7 +24,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement('ALTER TABLE chunks ALTER COLUMN embedding TYPE vector(1536)');
-        DB::statement('ALTER TABLE semantic_cache ALTER COLUMN embedding TYPE vector(1536)');
+        if (config('database.default') === 'pgsql') {
+            DB::statement('ALTER TABLE chunks ALTER COLUMN embedding TYPE vector(1536)');
+            DB::statement('ALTER TABLE semantic_cache ALTER COLUMN embedding TYPE vector(1536)');
+        }
     }
 };
