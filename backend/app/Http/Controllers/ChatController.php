@@ -150,10 +150,7 @@ class ChatController extends Controller
             if ($sessionId) {
                 $session = SessionChat::where('id', $sessionId)->where('user_id', $userId)->firstOrFail();
             } else {
-                $session = SessionChat::firstOrCreate(
-                    ['user_id' => $userId, 'title' => 'default'],
-                    ['user_id' => $userId, 'title' => 'default']
-                );
+                $session = SessionChat::create(['user_id' => $userId]);
             }
 
             $interaction = Interaction::create([
@@ -173,6 +170,7 @@ class ChatController extends Controller
             echo 'data: ' . json_encode([
                 'sources'            => $data['sources'],
                 'interaction_id'     => $interaction->id,
+                'session_id'         => $session->id,
                 'detected_category'  => $data['detected_category'] ?? null,
             ]) . "\n\n";
 

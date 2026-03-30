@@ -154,8 +154,14 @@ function TypingIndicator() {
 // Separado en subcomponente para envolver useSearchParams en Suspense
 
 function ChatContent() {
-  const searchParams  = useSearchParams()
-  const sessionId     = searchParams.get('session')
+  const searchParams   = useSearchParams()
+  const urlSessionId   = searchParams.get('session')
+
+  // activeSessionId: arranca desde la URL (historial) o se rellena con el
+  // session_id que devuelve el backend en el primer mensaje de una conversación nueva.
+  const [activeSessionId, setActiveSessionId] = useState<number | null>(
+    urlSessionId ? parseInt(urlSessionId, 10) : null,
+  )
 
   const [messages, setMessages]           = useState<ChatMessage[]>([])
   const [input, setInput]                 = useState('')
@@ -175,9 +181,9 @@ function ChatContent() {
 
   // Cargar historial si hay session en URL
   useEffect(() => {
-    if (!sessionId) return
+    if (!urlSessionId) return
     setHistoryLoading(true)
-    getHistory(sessionId)
+    getHistory(urlSessionId)
       .then(result => {
         if (!result.success) return
         const history = [...result.data!].reverse()
@@ -205,7 +211,7 @@ function ChatContent() {
         setMessages(msgs)
       })
       .finally(() => setHistoryLoading(false))
-  }, [sessionId])
+  }, [urlSessionId])
 
   // Cargar categorías
   useEffect(() => {
@@ -258,14 +264,13 @@ function ChatContent() {
 
     try {
       const categoryIds = selectedCategory === 'all' ? [] : [selectedCategory]
-      const parsedSessionId = sessionId ? parseInt(sessionId, 10) : null
 
       await streamChat(
         {
           question:   messageText,
           categoryIds,
           advanced,
-          sessionId:  parsedSessionId,
+          sessionId:  activeSessionId,
         },
         {
           onChunk: chunk => {
@@ -277,7 +282,8 @@ function ChatContent() {
               ),
             )
           },
-          onMeta: (sources, interactionId, detectedCategory) => {
+          onMeta: (sources, interactionId, detectedCategory, newSessionId) => {
+            if (newSessionId != null) setActiveSessionId(newSessionId)
             setMessages(prev =>
               prev.map(msg =>
                 msg.id === botMsgId

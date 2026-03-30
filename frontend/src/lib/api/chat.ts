@@ -32,6 +32,7 @@ export interface ChatStreamHandlers {
     sources:           ChatSource[],
     interactionId:     number,
     detectedCategory:  string | null,
+    sessionId:         number | null,
   ) => void
   onDone:  () => void
 }
@@ -119,6 +120,7 @@ export async function streamChat(
               typeof parsed.detected_category === 'string'
                 ? parsed.detected_category
                 : null,
+              typeof parsed.session_id === 'number' ? parsed.session_id : null,
             )
           }
         } catch {
